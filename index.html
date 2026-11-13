@@ -64,11 +64,11 @@
       <span>Ana García</span>
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Secciones">
+      <a href="#sobre-mi"   data-s="sobre-mi">Sobre mí</a>
       <a href="#destacados" data-s="destacados">Destacados</a>
       <a href="#galeria"    data-s="galeria">Galería</a>
       <a href="#logos"      data-s="logos">Logos</a>
       <a href="#guias"      data-s="guias">Guías</a>
-      <a href="#sobre-mi"   data-s="sobre-mi">Sobre mí</a>
     </nav>
     <button class="icon-btn theme-btn" id="themeToggle" aria-label="Cambiar entre modo claro y oscuro">
       <svg class="i i-sunx"><use href="#i-sun"/></svg>
@@ -81,11 +81,11 @@
 
 <div class="menu" id="menu" hidden>
   <nav aria-label="Menú móvil">
+    <a href="#sobre-mi">Sobre mí</a>
     <a href="#destacados">Destacados</a>
     <a href="#galeria">Galería</a>
     <a href="#logos">Logos</a>
     <a href="#guias">Guías</a>
-    <a href="#sobre-mi">Sobre mí</a>
     <a href="#contacto">Contacto</a>
   </nav>
 </div>
@@ -93,6 +93,7 @@
 <main id="contenido">
 
 <!-- ── Inicio ───────────────────────────────────────────────── -->
+
 <section class="hero" id="inicio" data-theme-section="inicio">
   <div class="container hero-main">
     <h1 class="name" id="heroName" aria-label="Ana Lucía García Lachira">
@@ -105,26 +106,50 @@
         <a class="btn" href="#galeria">Ver el trabajo</a>
         <a class="btn btn-line" href="#contacto">Escríbeme</a>
       </div>
-      <p class="hero-meta"><span class="live"></span>Piura, Perú. Disponible para proyectos.</p>
     </div>
-  </div>
-  <div class="strip" id="strip" aria-label="Muestra de trabajos" hidden>
-    <ul class="strip-track" id="stripTrack"></ul>
   </div>
 </section>
 
-<!-- ── Destacados ───────────────────────────────────────────── -->
+<section class="section" id="sobre-mi" data-theme-section="sobre-mi">
+  <div class="container about">
+    <div class="about-main">
+      <h2>Sobre mí</h2>
+      <p class="about-lead">Soy Ana Lucía, diseñadora gráfica digital en formación. La música es mi inspiración: de ahí salen las ideas, y al plasmarlas expreso muchas emociones.</p>
+      <p class="about-facts" id="aboutFacts"></p>
+    </div>
+    <div class="about-side">
+      <div class="panel">
+        <h3>Lo que más disfruto diseñar</h3>
+        <ul class="areas">
+          <li><span class="ico"><svg class="i"><use href="#i-ads"/></svg></span><div><strong>Diseño publicitario</strong><small>Piezas para redes y campañas</small></div></li>
+          <li><span class="ico"><svg class="i"><use href="#i-pen"/></svg></span><div><strong>Ilustración digital</strong><small>Personajes y arte original</small></div></li>
+          <li><span class="ico"><svg class="i"><use href="#i-mock"/></svg></span><div><strong>Mockups</strong><small>Marcas aplicadas a objetos reales</small></div></li>
+          <li><span class="ico"><svg class="i"><use href="#i-shapes"/></svg></span><div><strong>Logos</strong><small>Identidades con sus variaciones</small></div></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Herramientas</h3>
+        <ul class="tools">
+          <li><svg class="ti" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#001E36"/><text x="14" y="19.200" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="13" fill="#31A8FF">Ps</text></svg>Photoshop</li>
+          <li><svg class="ti" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#330000"/><text x="14" y="19.200" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="13" fill="#FF9A00">Ai</text></svg>Illustrator</li>
+          <li><svg class="ti" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#00005B"/><text x="14" y="19.200" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="13" fill="#D291FF">Ae</text></svg>After Effects</li>
+          <li><svg class="ti" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#49021F"/><text x="14" y="19.200" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="13" fill="#FF3366">Id</text></svg>InDesign</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section" id="destacados" data-theme-section="destacados">
   <div class="container">
     <header class="sec-head">
       <h2>Trabajo destacado</h2>
-      <p>Tres piezas para empezar.</p>
+      <p>Una selección de proyectos recientes.</p>
     </header>
     <div class="feat" id="featuredGrid"></div>
   </div>
 </section>
 
-<!-- ── Galería ──────────────────────────────────────────────── -->
 <section class="section" id="galeria" data-theme-section="galeria">
   <div class="container">
     <header class="sec-head">
@@ -132,11 +157,11 @@
       <div class="chips" id="chips" role="tablist" aria-label="Filtrar por tipo"></div>
     </header>
     <div class="justified" id="gallery" aria-live="polite"></div>
-    <div class="more-row"><button class="btn btn-line" id="galMore" hidden>Ver más piezas</button></div>
+    <div class="more-row"><button class="btn btn-line" id="galLess" hidden>Ver menos</button>
+      <button class="btn btn-line" id="galMore" hidden>Ver más piezas</button></div>
   </div>
 </section>
 
-<!-- ── Logos ────────────────────────────────────────────────── -->
 <section class="section" id="logos" data-theme-section="logos">
   <div class="container">
     <header class="sec-head">
@@ -147,7 +172,6 @@
   </div>
 </section>
 
-<!-- ── Guías ────────────────────────────────────────────────── -->
 <section class="section" id="guias" data-theme-section="guias" hidden>
   <div class="container">
     <header class="sec-head">
@@ -158,48 +182,19 @@
   </div>
 </section>
 
-<!-- ── Sobre mí ─────────────────────────────────────────────── -->
-<section class="section" id="sobre-mi" data-theme-section="sobre-mi">
-  <div class="container about">
-    <div class="about-main">
-      <h2>Sobre mí</h2>
-      <p class="about-lead">Soy Ana Lucía, diseñadora gráfica digital en formación. La música es mi inspiración: de ahí salen las ideas, y al plasmarlas expreso muchas emociones.</p>
-      <p class="about-facts" id="aboutFacts"></p>
-    </div>
-    <div class="about-side">
-      <div>
-        <h3>Lo que más disfruto diseñar</h3>
-        <ul class="areas">
-          <li><svg class="i"><use href="#i-ads"/></svg>Diseño publicitario</li>
-          <li><svg class="i"><use href="#i-pen"/></svg>Ilustración digital</li>
-          <li><svg class="i"><use href="#i-mock"/></svg>Mockups</li>
-          <li><svg class="i"><use href="#i-shapes"/></svg>Logos</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Herramientas</h3>
-        <ul class="tools">
-          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/photoshop/photoshop-original.svg" alt="" width="22" height="22" onerror="this.remove()">Photoshop</li>
-          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/illustrator/illustrator-original.svg" alt="" width="22" height="22" onerror="this.remove()">Illustrator</li>
-          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/aftereffects/aftereffects-original.svg" alt="" width="22" height="22" onerror="this.remove()">After Effects</li>
-          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/indesign/indesign-original.svg" alt="" width="22" height="22" onerror="this.remove()">InDesign</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Contacto ─────────────────────────────────────────────── -->
 <section class="section contact" id="contacto" data-theme-section="contacto">
   <div class="container">
-    <h2 class="contact-title">¿Tienes un proyecto? Cuéntame.</h2>
-    <div class="contact-grid">
+    <header class="sec-head sec-center">
+      <h2>¿Tienes un proyecto?</h2>
+      <p>Cuéntame qué necesitas y te respondo por WhatsApp o correo.</p>
+    </header>
+    <div class="contact-card">
       <div class="contact-side">
-        <p class="contact-lead">Freelance, prácticas y colaboraciones creativas. Respondo por WhatsApp o por correo.</p>
+        <p class="contact-lead">Freelance, prácticas y colaboraciones creativas.</p>
         <ul class="contact-list">
-          <li><svg class="i"><use href="#i-mail"/></svg><a id="cEmail" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a></li>
-          <li><svg class="i"><use href="#i-chat"/></svg><a id="cWhats" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a></li>
-          <li><svg class="i"><use href="#i-pin"/></svg><span>Piura, Perú</span></li>
+          <li><span class="ico"><svg class="i"><use href="#i-mail"/></svg></span><a id="cEmail" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a></li>
+          <li><span class="ico"><svg class="i"><use href="#i-chat"/></svg></span><a id="cWhats" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a></li>
+          <li><span class="ico"><svg class="i"><use href="#i-pin"/></svg></span><span>Piura, Perú</span></li>
         </ul>
         <a id="cWhatsBtn" class="btn btn-wa" href="https://wa.me/51977575523?text=Hola%20Ana%20Luc%C3%ADa%2C%20me%20interesa%20trabajar%20contigo" target="_blank" rel="noopener">Escribir por WhatsApp</a>
       </div>
@@ -226,20 +221,29 @@
 </main>
 
 <footer class="footer">
-  <div class="container footer-in">
-    <div class="footer-brand">
-      <img src="imagenes/logo.png" alt="" width="40" height="40">
-      <div><strong>Ana Lucía García Lachira</strong><span>Diseñadora gráfica digital en Piura, Perú</span></div>
+  <div class="container">
+    <div class="footer-top">
+      <a href="#inicio" class="footer-brand" aria-label="Ana García, ir al inicio">
+        <img src="imagenes/logo.png" alt="" width="44" height="44">
+        <div><strong>Ana Lucía García Lachira</strong><span>Diseñadora gráfica digital</span></div>
+      </a>
+      <nav class="footer-nav" aria-label="Pie de página">
+        <a href="#sobre-mi">Sobre mí</a>
+        <a href="#destacados">Destacados</a>
+        <a href="#galeria">Galería</a>
+        <a href="#logos">Logos</a>
+        <a href="#guias">Guías</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
     </div>
-    <nav class="footer-nav" aria-label="Pie de página">
-      <a href="#destacados">Destacados</a>
-      <a href="#galeria">Galería</a>
-      <a href="#logos">Logos</a>
-      <a href="#sobre-mi">Sobre mí</a>
-      <a href="#contacto">Contacto</a>
-    </nav>
-    <a href="#inicio" class="icon-btn up" aria-label="Volver arriba"><svg class="i"><use href="#i-up"/></svg></a>
-    <p class="copy">&copy; <span id="year">2026</span> Ana Lucía García Lachira. Todos los derechos reservados.</p>
+    <div class="footer-bottom">
+      <p class="copy">&copy; <span id="year">2026</span> Ana Lucía García Lachira. Todos los derechos reservados.</p>
+      <div class="footer-social">
+        <a id="fMail" class="icon-btn" href="mailto:agarcialachira@gmail.com" aria-label="Escribir por correo"><svg class="i"><use href="#i-mail"/></svg></a>
+        <a id="fWa" class="icon-btn" href="https://wa.me/51977575523" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp"><svg class="i"><use href="#i-chat"/></svg></a>
+        <a href="#inicio" class="icon-btn up" aria-label="Volver arriba"><svg class="i"><use href="#i-up"/></svg></a>
+      </div>
+    </div>
   </div>
 </footer>
 

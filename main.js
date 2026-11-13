@@ -280,42 +280,27 @@
   };
   const ratioOf = it => it.width && it.height ? clamp(it.width / it.height, .5, 2.4) : null;
 
-  /* ── Inicio: nombre con tipografía variable + tira de trabajos ─ */
-  function renderStrip(data) {
-    const pool = [...data.featured, ...data.designs, ...data.mockups, ...data.illustrations].filter(i => ratioOf(i));
-    const picks = pool.filter((_, i) => i % Math.max(1, Math.ceil(pool.length / 16)) === 0).slice(0, 16);
-    if (picks.length < 4) return;
-    const items = withAlt(picks, 'Trabajo'); GROUPS.strip = items;
-    const li = (it, i, dup) => `<li style="width:calc(var(--sh-h) * ${ratioOf(it).toFixed(4)})"${dup ? ' aria-hidden="true"' : ''}>
-      <button data-v="strip" data-i="${i}" data-cursor="Ver" aria-label="Ampliar ${esc(it.alt)}"${dup ? ' tabindex="-1"' : ''}>
-        <img src="${esc(it.thumb || it.src)}" alt="" loading="${i < 6 && !dup ? 'eager' : 'lazy'}" decoding="async"${dims(it)}></button></li>`;
-    $('#stripTrack').innerHTML = items.map((it, i) => li(it, i, false)).join('') + items.map((it, i) => li(it, i, true)).join('');
-    $('#strip').hidden = false;
-  }
-
   /* ── Destacados ────────────────────────────────────────────── */
   function renderFeatured(items) {
     if (!items.length) return hideSection('destacados');
     items = withAlt(items, 'Proyecto destacado'); GROUPS.featured = items;
     $('#featuredGrid').innerHTML = items.map((it, i) => `
-      <article class="feat-item">
-        <div class="feat-media">
-          <button data-v="featured" data-i="${i}" data-cursor="Ampliar" aria-label="Ampliar ${esc(it.alt)}">
-            <img src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
-          </button>
-        </div>
+      <article class="feat-card">
+        <button class="feat-media" data-v="featured" data-i="${i}" aria-label="Ampliar ${esc(it.alt)}">
+          <img class="bgi" src="${esc(it.thumb || it.src)}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+          <img class="fg" src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
+        </button>
         <div class="feat-text">
           ${it.title ? `<h3>${esc(it.title)}</h3>` : ''}
           ${it.desc ? `<p>${esc(it.desc)}</p>` : ''}
-          ${it.tags?.length ? `<p class="feat-tags">${it.tags.map(esc).join(', ')}</p>` : ''}
-          <button class="btn btn-line btn-sm" data-v="featured" data-i="${i}">${icon('plus')} Ver completo</button>
+          ${it.tags?.length ? `<p class="feat-tags">${it.tags.map(t => `<span>${esc(t)}</span>`).join('')}</p>` : ''}
         </div>
       </article>`).join('');
   }
 
   /* ── Galería: filas justificadas que respetan cada proporción ─ */
   const KINDS = [['mockups', 'Mockups'], ['designs', 'Diseños'], ['illustrations', 'Ilustraciones']];
-  const PAGE = 18;
+  const PAGE = 9;
   const gal = { all: [], filter: 'all', shown: PAGE, tiles: [], list: [] };
 
   function renderGallery(data) {
@@ -333,7 +318,11 @@
       const box = $('#gallery'); box.classList.add('swap');
       setTimeout(() => { gal.filter = b.dataset.f; gal.shown = PAGE; build(); box.classList.remove('swap'); }, reduceMotion ? 0 : 220);
     });
-    $('#galMore').addEventListener('click', () => { gal.shown += PAGE; build(); });
+    $('#galMore').addEventListener('click', () => { gal.shown = (gal.rendered || gal.shown) + PAGE; build(); });
+    $('#galLess').addEventListener('click', () => {
+      gal.shown = PAGE; build();
+      $('#galeria').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
     $('#aboutFacts').textContent = `${total + data.logos.length + data.featured.length} piezas publicadas entre proyectos destacados, mockups, diseños, logos e ilustraciones.`;
     new ResizeObserver(() => { const w = $('#gallery').clientWidth; if (w !== gal.w) { gal.w = w; layout(); } }).observe($('#gallery'));
     build();
@@ -348,7 +337,7 @@
 
   function build() {
     const list = pool(); gal.list = list; GROUPS.gallery = list;
-    const part = list.slice(0, gal.shown);
+    const part = list.slice(0, gal.shown + 8);   // margen para cerrar la última fila
     $('#galCount').textContent = `${list.length} ${list.length === 1 ? 'pieza' : 'piezas'}`;
     const old = new Map(gal.tiles.map(t => [t._it, t]));
     gal.tiles = part.map((it, i) => {
@@ -368,17 +357,15 @@
       t.dataset.v = 'gallery'; t.dataset.i = list.indexOf(it);
       return t;
     });
-    $('#galMore').hidden = list.length <= gal.shown;
-    if (!$('#galMore').hidden) $('#galMore').textContent = `Ver más piezas (${list.length - gal.shown})`;
     layout();
   }
 
   let lt = 0;
   const layoutSoon = () => { clearTimeout(lt); lt = setTimeout(layout, 80); };
   function layout() {
-    const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { box.textContent = ''; return; }
+    const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { if (!gal.tiles.length) box.textContent = ''; return; }
     const gap = W <= 700 ? 8 : 12, H = W < 520 ? 170 : W < 820 ? 200 : W < 1180 ? 260 : 300;
-    const frag = document.createDocumentFragment(); let row = [], sum = 0;
+    const frag = document.createDocumentFragment(); let row = [], sum = 0, rendered = 0;
     const flush = (full) => {
       if (!row.length) return;
       const gaps = gap * (row.length - 1);
@@ -390,7 +377,7 @@
         const w = full && i === row.length - 1 ? W - gaps - used : Math.floor(t._r * h);
         used += w; t.style.width = `${w}px`; t.style.height = `${h}px`; el.appendChild(t);
       });
-      frag.appendChild(el); row = []; sum = 0;
+      frag.appendChild(el); rendered += row.length; row = []; sum = 0;
     };
     for (const t of gal.tiles) {
       row.push(t); sum += t._r;
@@ -398,10 +385,16 @@
         const h = (W - gap * (row.length - 1)) / sum;
         if (h < H * .62 && row.length > 1) { const last = row.pop(); sum -= last._r; flush(true); row = [last]; sum = last._r; }
         else flush(true);
+        if (!row.length && rendered >= gal.shown) break;   // fila completa y ya hay suficientes piezas
       }
     }
     flush(false);
     box.textContent = ''; box.appendChild(frag);
+    gal.rendered = rendered;
+    const total = gal.list.length;
+    $('#galMore').hidden = rendered >= total;
+    $('#galLess').hidden = total <= PAGE || gal.shown <= PAGE;
+    if (!$('#galMore').hidden) $('#galMore').textContent = `Ver más piezas (${total - rendered})`;
   }
 
   /* ── Logos ─────────────────────────────────────────────────── */
@@ -412,11 +405,11 @@
     $('#logosGrid').innerHTML = LOGOS.map((l, i) => {
       const n = l.variations.length;
       return `<article class="logo-card">
-        <button class="logo-tile" data-logo="${i}" data-cursor="Ver" aria-label="Ver ${esc(l.title)}"><img src="${esc(l.src)}" alt="${esc(l.alt)}"${dims(l)} loading="lazy" decoding="async"></button>
+        <button class="logo-tile" data-logo="${i}" aria-label="Ver ${esc(l.title)}"><img src="${esc(l.src)}" alt="${esc(l.alt)}"${dims(l)} loading="lazy" decoding="async"></button>
         <div class="logo-meta">
           <h3>${esc(l.title)}</h3>
           ${l.desc ? `<p>${esc(l.desc)}</p>` : ''}
-          ${n > 1 ? `<button data-logo="${i}">${n} variaciones</button>` : ''}
+          ${n > 1 ? `<button class="pill" data-logo="${i}">${icon('grid')} ${n} variaciones</button>` : ''}
         </div></article>`;
     }).join('');
   }
@@ -498,19 +491,18 @@
     $('#year').textContent = new Date().getFullYear();
     const root = document.documentElement, meta = $('meta[name="theme-color"]');
 
-    const setTheme = (t, x, y) => {
+    const setTheme = t => {
       const apply = () => { root.setAttribute('data-theme', t); store.set('ag_theme', t); meta?.setAttribute('content', t === 'dark' ? '#070608' : '#FAF9F7'); };
-      if (!document.startViewTransition || reduceMotion) return apply();
-      const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-      const vt = document.startViewTransition(apply);
-      vt.ready.then(() => root.animate(
-        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-        { duration: 750, easing: 'cubic-bezier(.22,1,.36,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+      if (reduceMotion) return apply();
+      if (document.startViewTransition) {                 // fundido cruzado suave
+        const vt = document.startViewTransition(apply);
+        vt.finished.catch(() => {});
+      } else {
+        root.classList.add('theme-fade'); apply();
+        setTimeout(() => root.classList.remove('theme-fade'), 800);
+      }
     };
-    $('#themeToggle').addEventListener('click', e => {
-      const b = e.currentTarget.getBoundingClientRect();
-      setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', b.left + b.width / 2, b.top + b.height / 2);
-    });
+    $('#themeToggle').addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
 
     const burger = $('#burger'), menu = $('#menu');
     const setMenu = open => { menu.hidden = !open; burger.setAttribute('aria-expanded', open); burger.classList.toggle('open', open); document.body.classList.toggle('no-scroll', open); };
@@ -526,7 +518,6 @@
         const y = scrollY, h = document.documentElement.scrollHeight - innerHeight;
         bar.style.transform = `scaleX(${h > 0 ? y / h : 0})`;
         nav.classList.toggle('scrolled', y > 24);
-        if (menu.hidden) nav.classList.toggle('hide', y > 240 && y > last + 4 ? true : y < last - 4 ? false : nav.classList.contains('hide'));
         last = y; tick = false;
       });
     };
@@ -548,6 +539,8 @@
     const fmt = wa.startsWith('51') && wa.length === 11 ? `+51 ${wa.slice(2, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
     $('#cWhats').href = `https://wa.me/${wa}`; $('#cWhats').textContent = fmt;
     $('#cWhatsBtn').href = `https://wa.me/${wa}?text=${encodeURIComponent('Hola Ana Lucía, me interesa trabajar contigo')}`;
+    $('#fWa').href = `https://wa.me/${wa}`;
+    if (contact.email) { $('#fMail').href = `mailto:${contact.email}`; }
     if (contact.email) { $('#cEmail').href = `mailto:${contact.email}`; $('#cEmail').textContent = contact.email; }
     if (contact.instagram) {
       const u = String(contact.instagram).replace(/^@/, '').replace(/[^\w.]/g, '');
@@ -579,7 +572,6 @@
     });
     const run = (id, fn) => { if (!off.has(id)) fn(); };
 
-    renderStrip(data);
     run('destacados', () => renderFeatured(data.featured));
     run('galeria', () => renderGallery(data));
     run('logos', () => renderLogos(data.logos));
