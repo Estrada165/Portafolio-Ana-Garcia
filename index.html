@@ -6,14 +6,14 @@
   <title>Ana García — Diseñadora gráfica digital</title>
   <meta name="description" content="Ana Lucía García Lachira, diseñadora gráfica digital en Piura, Perú. Identidades, mockups, diseños e ilustraciones.">
   <meta name="author" content="Ana Lucía García Lachira">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#FAF9F7">
   <meta property="og:title"       content="Ana García — Diseñadora gráfica digital">
   <meta property="og:description" content="Portfolio de identidades, mockups, diseños e ilustraciones.">
   <meta property="og:image"       content="imagenes/logo.png">
   <meta property="og:type"        content="website">
   <link rel="icon" type="image/png" href="imagenes/logo.png">
-  <link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/playfair.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
   <script>
     (function () {
@@ -22,6 +22,7 @@
       try { t = localStorage.getItem('ag_theme'); } catch (e) {}
       if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', t);
+      var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', t === 'dark' ? '#070608' : '#FAF9F7');
     })();
   </script>
 </head>
@@ -35,6 +36,7 @@
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 5 7.5 12l7 7"/></symbol>
     <symbol id="i-right" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/></symbol>
+    <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="10.500" cy="10.500" r="6"/><path d="M15 15l5 5M10.500 8v5M8 10.500h5"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
@@ -53,9 +55,6 @@
 
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <div class="progress" id="progress" aria-hidden="true"></div>
-<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-<div class="grain" aria-hidden="true"></div>
-<div class="cur" id="cursor" aria-hidden="true"></div>
 
 <!-- ── Navegación ───────────────────────────────────────────── -->
 <header class="nav" id="nav">
@@ -97,8 +96,8 @@
 <section class="hero" id="inicio" data-theme-section="inicio">
   <div class="container hero-main">
     <h1 class="name" id="heroName" aria-label="Ana Lucía García Lachira">
-      <span class="line">Ana Lucía</span>
-      <span class="line">García Lachira</span>
+      <span class="line"><span class="ln">Ana Lucía</span></span>
+      <span class="line v"><span class="ln">García Lachira</span></span>
     </h1>
     <div class="hero-foot">
       <p class="hero-lead">Diseñadora gráfica digital. Identidades, mockups e ilustraciones con alma visual.</p>

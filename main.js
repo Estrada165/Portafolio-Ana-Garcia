@@ -281,47 +281,12 @@
   const ratioOf = it => it.width && it.height ? clamp(it.width / it.height, .5, 2.4) : null;
 
   /* ── Inicio: nombre con tipografía variable + tira de trabajos ─ */
-  function setupHero() {
-    const name = $('#heroName'); let n = 0;
-    $$('.line', name).forEach(line => {
-      const txt = line.textContent; line.textContent = '';
-      for (const ch of txt) {
-        const s = document.createElement('span');
-        s.className = 'ch'; s.setAttribute('aria-hidden', 'true');
-        s.style.setProperty('--i', n++); s.textContent = ch === ' ' ? ' ' : ch;
-        line.appendChild(s);
-      }
-    });
-    if (reduceMotion) return;
-    const chs = $$('.ch', name);
-    let px = -9999, py = -9999, visible = true, raf = 0, rects = [];
-    const measure = () => { rects = chs.map(c => { const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); };
-    const reach = () => Math.max(160, innerWidth * .15);
-    const frame = t => {
-      raf = 0; if (!visible) return;
-      measure();
-      const R = reach();
-      chs.forEach((c, i) => {
-        const [cx, cy] = rects[i], d = Math.hypot(px - cx, py - cy) / R, f = Math.exp(-d * d * 1.6);
-        const amb = (Math.sin(t / 1100 + i * .6) + 1) / 2;
-        c.style.setProperty('--wg', Math.round(clamp(470 + amb * 90 + f * 300, 200, 800)));
-        c.style.setProperty('--w', (84 + amb * 3 + f * 13).toFixed(1));
-      });
-      raf = requestAnimationFrame(frame);
-    };
-    const kick = () => { if (!raf && visible) raf = requestAnimationFrame(frame); };
-    addEventListener('pointermove', e => { px = e.clientX; py = e.clientY; }, { passive: true });
-    document.addEventListener('pointerleave', () => { px = py = -9999; });
-    new IntersectionObserver(([en]) => { visible = en.isIntersecting; kick(); }).observe($('#inicio'));
-    kick();
-  }
-
   function renderStrip(data) {
     const pool = [...data.featured, ...data.designs, ...data.mockups, ...data.illustrations].filter(i => ratioOf(i));
     const picks = pool.filter((_, i) => i % Math.max(1, Math.ceil(pool.length / 16)) === 0).slice(0, 16);
     if (picks.length < 4) return;
     const items = withAlt(picks, 'Trabajo'); GROUPS.strip = items;
-    const li = (it, i, dup) => `<li style="width:calc(var(--sh) * ${ratioOf(it).toFixed(4)})"${dup ? ' aria-hidden="true"' : ''}>
+    const li = (it, i, dup) => `<li style="width:calc(var(--sh-h) * ${ratioOf(it).toFixed(4)})"${dup ? ' aria-hidden="true"' : ''}>
       <button data-v="strip" data-i="${i}" data-cursor="Ver" aria-label="Ampliar ${esc(it.alt)}"${dup ? ' tabindex="-1"' : ''}>
         <img src="${esc(it.thumb || it.src)}" alt="" loading="${i < 6 && !dup ? 'eager' : 'lazy'}" decoding="async"${dims(it)}></button></li>`;
     $('#stripTrack').innerHTML = items.map((it, i) => li(it, i, false)).join('') + items.map((it, i) => li(it, i, true)).join('');
@@ -526,13 +491,15 @@
       </div>`;
   }
 
+  const TINT = { inicio: 'a', destacados: 'b', galeria: 'c', logos: 'd', guias: 'e', 'sobre-mi': 'f', contacto: 'g' };
+
   /* ── Navegación, tema y scroll ─────────────────────────────── */
   function setupUI() {
     $('#year').textContent = new Date().getFullYear();
     const root = document.documentElement, meta = $('meta[name="theme-color"]');
 
     const setTheme = (t, x, y) => {
-      const apply = () => { root.setAttribute('data-theme', t); store.set('ag_theme', t); meta?.setAttribute('content', t === 'dark' ? '#000000' : '#F3F2EF'); };
+      const apply = () => { root.setAttribute('data-theme', t); store.set('ag_theme', t); meta?.setAttribute('content', t === 'dark' ? '#070608' : '#FAF9F7'); };
       if (!document.startViewTransition || reduceMotion) return apply();
       const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
       const vt = document.startViewTransition(apply);
@@ -567,21 +534,12 @@
 
     const links = $$('#navLinks a');
     const spy = new IntersectionObserver(es => es.forEach(en => {
-      if (en.isIntersecting) links.forEach(a => a.classList.toggle('active', a.dataset.s === en.target.id));
+      if (!en.isIntersecting) return;
+      links.forEach(a => a.classList.toggle('active', a.dataset.s === en.target.id));
+      root.dataset.tint = TINT[en.target.id] || 'a';          // el fondo cambia de tonos al avanzar
     }), { rootMargin: '-45% 0px -50% 0px' });
     $$('main > section[id]').forEach(s => spy.observe(s));
 
-    if (finePointer) {                                   // burbuja del cursor sobre las piezas
-      const cur = $('#cursor'); let on = false;
-      addEventListener('pointermove', e => {
-        if (e.pointerType !== 'mouse') return;
-        cur.style.setProperty('--x', `${e.clientX}px`); cur.style.setProperty('--y', `${e.clientY}px`);
-        const t = e.target.closest?.('[data-cursor]');
-        if (t && V.el.hidden) { cur.dataset.label = t.dataset.cursor || 'Ver'; if (!on) { cur.classList.add('on'); on = true; } }
-        else if (on) { cur.classList.remove('on'); on = false; }
-      }, { passive: true });
-      document.addEventListener('pointerleave', () => { cur.classList.remove('on'); on = false; });
-    }
   }
 
   /* ── Contacto ──────────────────────────────────────────────── */
@@ -610,7 +568,7 @@
 
   /* ── Arranque ──────────────────────────────────────────────── */
   async function init() {
-    setupUI(); setupHero();
+    setupUI();
     const { data, docs, settings } = await loadAll();
     applyTheme(settings.theme);
 
