@@ -1,7 +1,8 @@
 /* ============================================================
-   Portfolio Ana Lucía García — v2
-   - Contenido local (data/local-content.json) + Supabase (tablas works, pdf_*, site_settings)
-   - Lectura pública por REST (sin librerías); la escritura vive en admin.html
+   Portfolio Ana Lucía García — v3
+   Contenido local (data/local-content.json) + Supabase por REST
+   (works, work_assets, pdf_documents, pdf_pages, site_settings).
+   La escritura vive en admin.html.
    ============================================================ */
 (() => {
   'use strict';
@@ -13,11 +14,14 @@
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch { /* sin almacenamiento */ } },
   };
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const icon = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 
   /* ── Datos ─────────────────────────────────────────────────── */
   async function rest(path) {
@@ -59,8 +63,7 @@
       const it = norm(w);
       if (k === 'logos') {
         it.title = w.title; it.desc = w.description || '';
-        it.variations = assets.filter(a => a.work_id === w.id)
-          .map(a => ({ label: a.label, image_url: a.image_url }));
+        it.variations = assets.filter(a => a.work_id === w.id).map(a => ({ label: a.label, image_url: a.image_url }));
       }
       data[k].push(it);
     }
@@ -68,19 +71,21 @@
     return { data, docs: docs.filter(d => d.page_count > 0 || d.source_url), settings: cfg };
   }
 
-  /* ── Tema (colores, tipografía, secciones) desde site_settings ─ */
+  /* ── Tema personalizado (site_settings.theme) ─────────────────
+     Solo se aplica si el panel lo marcó con "customized": true; así
+     los valores de ejemplo del esquema no pisan el diseño por defecto. */
   const okColor = v => typeof v === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(v.trim()) ? v.trim() : null;
   const okFont  = v => typeof v === 'string' && /^[\w\s-]{2,40}$/.test(v.trim()) ? v.trim() : null;
 
   function applyTheme(theme) {
-    if (!theme) return;
+    if (!theme || theme.customized !== true) return;
     const c = theme.colors || {}, d = c.dark || {};
     const pick = (obj, map) => Object.entries(map).map(([k, css]) => okColor(obj[k]) ? `${css}:${okColor(obj[k])};` : '').join('');
     const light = pick(c, { accent: '--accent', accentLight: '--accent-2', bg: '--bg', bgCard: '--card', bgSoft: '--soft', text: '--text', text2: '--text-2' });
     const dark  = pick(d, { bg: '--bg', bgCard: '--card', bgSoft: '--soft', text: '--text', text2: '--text-2' });
-    const radius = { sharp: '4px', soft: '18px', round: '30px' }[theme.radius];
+    const radius = { sharp: '4px', soft: '14px', round: '26px' }[theme.radius];
     const fd = okFont(theme.fonts?.display), fb = okFont(theme.fonts?.body);
-    let css = `:root{${light}${radius ? `--r:${radius};` : ''}${fd ? `--f-display:'${fd}',Georgia,serif;` : ''}${fb ? `--f-body:'${fb}',system-ui,sans-serif;` : ''}}`;
+    let css = `:root{${light}${radius ? `--r:${radius};` : ''}${fd ? `--f-display:'${fd}',system-ui,sans-serif;` : ''}${fb ? `--f-body:'${fb}',system-ui,sans-serif;` : ''}}`;
     if (dark) css += `[data-theme="dark"]{${dark}}`;
     for (const [id, o] of Object.entries(theme.sections || {})) {
       if (!/^[\w-]+$/.test(id)) continue;
@@ -90,145 +95,364 @@
     let el = $('#themeVars'); if (!el) { el = document.createElement('style'); el.id = 'themeVars'; document.head.appendChild(el); }
     el.textContent = css;
     const fams = [];
-    if (fd && fd !== 'Playfair Display') fams.push(`family=${encodeURIComponent(fd).replace(/%20/g, '+')}:wght@400;600;700`);
-    if (fb && fb !== 'Inter') fams.push(`family=${encodeURIComponent(fb).replace(/%20/g, '+')}:wght@300;400;500;600`);
+    if (fd && fd !== 'Bricolage' && fd !== 'Bricolage Grotesque') fams.push(`family=${encodeURIComponent(fd).replace(/%20/g, '+')}:wght@400;600;700`);
+    if (fb && fb !== 'Geist') fams.push(`family=${encodeURIComponent(fb).replace(/%20/g, '+')}:wght@300;400;500;600`);
     if (fams.length) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = `https://fonts.googleapis.com/css2?${fams.join('&')}&display=swap`; document.head.appendChild(l); }
   }
 
-  /* ── Visor de imágenes (lightbox) ──────────────────────────── */
-  const lb = {
-    el: $('#lightbox'), img: $('#lbImg'), items: [], i: 0, opener: null,
-    open(items, i, opener) {
-      this.items = items; this.i = i; this.opener = opener || document.activeElement;
-      this.el.hidden = false; document.body.classList.add('no-scroll');
-      this.show(); $('#lbClose').focus();
-    },
-    show() {
-      const it = this.items[this.i]; if (!it) return;
-      this.img.classList.add('swap');
-      const next = new Image();
-      next.onload = next.onerror = () => { this.img.src = it.src; this.img.alt = it.alt || it.title || ''; this.img.classList.remove('swap'); };
-      next.src = it.src;
-      $('#lbTitle').textContent = it.title || '';
-      $('#lbDesc').textContent = it.desc || it.category || '';
-      $('#lbCount').textContent = this.items.length > 1 ? `${this.i + 1} / ${this.items.length}` : '';
-      const multi = this.items.length > 1;
-      $('#lbPrev').hidden = $('#lbNext').hidden = !multi;
-      [-1, 1].forEach(d => { const n = this.items[(this.i + d + this.items.length) % this.items.length]; if (n) new Image().src = n.src; });
-    },
-    go(d) { if (this.items.length < 2) return; this.i = (this.i + d + this.items.length) % this.items.length; this.show(); },
-    close() { this.el.hidden = true; document.body.classList.remove('no-scroll'); this.opener?.focus?.(); },
-  };
-  $('#lbClose').addEventListener('click', () => lb.close());
-  $('#lbPrev').addEventListener('click', () => lb.go(-1));
-  $('#lbNext').addEventListener('click', () => lb.go(1));
-  lb.el.addEventListener('click', e => { if (e.target === lb.el || e.target.classList.contains('lb-fig')) lb.close(); });
-  document.addEventListener('keydown', e => {
-    if (lb.el.hidden) return;
-    if (e.key === 'Escape') lb.close();
-    else if (e.key === 'ArrowLeft') lb.go(-1);
-    else if (e.key === 'ArrowRight') lb.go(1);
-  });
-  swipe(lb.el, d => lb.go(d));
+  /* ── Visor: zoom real (rueda, pellizco, arrastre, doble toque) ─ */
+  const V = {
+    el: $('#viewer'), stage: $('#vStage'), img: $('#vImg'),
+    items: [], i: 0, s: 1, tx: 0, ty: 0, opener: null, tok: 0,
+    bg: () => $$('.nav, main, .footer, .menu, .skip-link'),
 
-  function swipe(el, cb) {
-    let x0 = null, y0 = null;
-    el.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
-    el.addEventListener('touchend', e => {
-      if (x0 === null) return;
-      const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
-      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) cb(dx < 0 ? 1 : -1);
-      x0 = null;
-    }, { passive: true });
+    open(items, i, opener) {
+      if (!items.length) return;
+      this.items = items; this.opener = opener || document.activeElement;
+      this.el.hidden = false; document.body.classList.add('no-scroll');
+      this.bg().forEach(n => n.setAttribute('inert', ''));
+      const multi = items.length > 1;
+      this.el.classList.toggle('single', !multi);
+      this.el.classList.toggle('show-thumbs', multi && innerHeight > 620);
+      $('#vThumbsBtn').setAttribute('aria-pressed', this.el.classList.contains('show-thumbs'));
+      $('#vThumbs').innerHTML = multi ? items.map((it, n) =>
+        `<button data-n="${n}" aria-label="Ir a ${n + 1} de ${items.length}"><img src="${esc(it.thumb || it.src)}" alt="" loading="lazy" decoding="async"></button>`).join('') : '';
+      this.show(i);
+      $('#vClose').focus({ preventScroll: true });
+    },
+
+    show(i) {
+      const n = this.items.length; this.i = (i + n) % n;
+      const it = this.items[this.i], token = ++this.tok;
+      this.reset(false);
+      this.el.classList.add('loading');
+      this.img.alt = it.alt || it.title || '';
+      if (it.thumb && it.thumb !== it.src) { this.img.style.opacity = 1; this.img.src = it.thumb; }
+      else this.img.style.opacity = 0;
+      const full = new Image();
+      full.onload = full.onerror = () => {
+        if (token !== this.tok) return;
+        this.img.src = it.src; this.img.style.opacity = 1; this.el.classList.remove('loading');
+      };
+      full.src = it.src;
+      $('#vTitle').textContent = it.title || it.category || '';
+      $('#vCount').textContent = n > 1 ? `${this.i + 1} / ${n}` : (it.desc || '');
+      $('#vOpen').href = it.src;
+      $$('#vThumbs button').forEach((b, k) => {
+        const on = k === this.i; b.setAttribute('aria-current', on);
+        if (on) b.parentElement.scrollTo({ left: b.offsetLeft - b.parentElement.clientWidth / 2 + b.clientWidth / 2, behavior: 'auto' });
+      });
+      [1, -1].forEach(d => { const q = this.items[(this.i + d + n) % n]; if (q && n > 1) new Image().src = q.src; });
+    },
+
+    go(d) { if (this.items.length > 1) this.show(this.i + d); },
+
+    close() {
+      this.el.hidden = true; this.tok++;
+      this.img.removeAttribute('src');
+      document.body.classList.remove('no-scroll');
+      this.bg().forEach(n => n.removeAttribute('inert'));
+      this.opener?.focus?.({ preventScroll: true });
+    },
+
+    reset(animate = true) { this.s = 1; this.tx = this.ty = 0; this.apply(animate); },
+
+    limits() {
+      const r = this.stage.getBoundingClientRect();
+      const w = this.img.offsetWidth * this.s, h = this.img.offsetHeight * this.s;
+      return { mx: Math.max(0, (w - r.width) / 2), my: Math.max(0, (h - r.height) / 2), r };
+    },
+
+    apply(animate = false) {
+      const { mx, my } = this.limits();
+      this.tx = clamp(this.tx, -mx, mx); this.ty = clamp(this.ty, -my, my);
+      this.img.style.transition = animate && !reduceMotion ? 'transform .3s cubic-bezier(.22,1,.36,1), opacity .25s' : 'opacity .25s';
+      this.img.style.transform = `translate(${this.tx}px,${this.ty}px) scale(${this.s})`;
+      $('#vZoomLevel').textContent = `${Math.round(this.s * 100)}%`;
+      this.el.classList.toggle('zoomed', this.s > 1.01);
+    },
+
+    /* Zoom manteniendo fijo el punto (cx, cy), medido desde el centro del escenario */
+    zoomAt(ns, cx, cy, animate) {
+      ns = clamp(ns, 1, 6); const k = ns / this.s;
+      this.tx = cx - (cx - this.tx) * k; this.ty = cy - (cy - this.ty) * k; this.s = ns;
+      if (ns === 1) this.tx = this.ty = 0;
+      this.apply(animate);
+    },
+    rel(x, y) { const r = this.stage.getBoundingClientRect(); return [x - (r.left + r.width / 2), y - (r.top + r.height / 2)]; },
+    step(f) { this.zoomAt(this.s * f, 0, 0, true); },
+  };
+
+  (() => {
+    const { el, stage } = V, ptrs = new Map();
+    let moved = false, startX = 0, startY = 0, pinch = null;
+    const dist = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+
+    stage.addEventListener('pointerdown', e => {
+      stage.setPointerCapture(e.pointerId);
+      ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptrs.size === 1) { moved = false; startX = e.clientX; startY = e.clientY; }
+      if (ptrs.size === 2) { pinch = { d: dist(), s: V.s }; moved = true; }
+      el.classList.toggle('dragging', V.s > 1);
+    });
+    stage.addEventListener('pointermove', e => {
+      const p = ptrs.get(e.pointerId); if (!p) return;
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      if (ptrs.size === 2 && pinch) {
+        const [a, b] = [...ptrs.values()];
+        const [cx, cy] = V.rel((a.x + b.x) / 2, (a.y + b.y) / 2);
+        V.zoomAt(pinch.s * dist() / pinch.d, cx, cy, false);
+      } else if (ptrs.size === 1) {
+        if (Math.hypot(e.clientX - startX, e.clientY - startY) > 5) moved = true;
+        if (V.s > 1) { V.tx += dx; V.ty += dy; V.apply(false); }
+      }
+    });
+    const end = e => {
+      if (!ptrs.has(e.pointerId)) return;
+      const wasSingle = ptrs.size === 1; ptrs.delete(e.pointerId);
+      if (ptrs.size < 2) pinch = null;
+      el.classList.remove('dragging');
+      if (!wasSingle || e.type === 'pointercancel') return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (V.s <= 1.01 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) return V.go(dx < 0 ? 1 : -1);
+      if (moved) return;
+      if (e.target === V.img) {
+        if (V.s > 1.01) V.reset(); else { const [cx, cy] = V.rel(e.clientX, e.clientY); V.zoomAt(2.6, cx, cy, true); }
+      } else if (V.s <= 1.01) V.close();
+    };
+    stage.addEventListener('pointerup', end);
+    stage.addEventListener('pointercancel', end);
+    stage.addEventListener('wheel', e => {
+      e.preventDefault();
+      const [cx, cy] = V.rel(e.clientX, e.clientY);
+      V.zoomAt(V.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.012 : 0.0018)), cx, cy, false);
+    }, { passive: false });
+    V.img.addEventListener('dragstart', e => e.preventDefault());
+
+    $('#vClose').addEventListener('click', () => V.close());
+    $('#vPrev').addEventListener('click', () => V.go(-1));
+    $('#vNext').addEventListener('click', () => V.go(1));
+    $('#vZoomIn').addEventListener('click', () => V.step(1.5));
+    $('#vZoomOut').addEventListener('click', () => V.step(1 / 1.5));
+    $('#vZoomLevel').addEventListener('click', () => V.reset());
+    $('#vThumbsBtn').addEventListener('click', e => {
+      const on = el.classList.toggle('show-thumbs'); e.currentTarget.setAttribute('aria-pressed', on); V.apply(false);
+    });
+    $('#vThumbs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) V.show(+b.dataset.n); });
+    addEventListener('resize', () => { if (!el.hidden) V.apply(false); });
+
+    document.addEventListener('keydown', e => {
+      if (el.hidden) return;
+      const k = e.key, pan = 80;
+      if (k === 'Escape') V.close();
+      else if (k === '+' || k === '=') V.step(1.4);
+      else if (k === '-' || k === '_') V.step(1 / 1.4);
+      else if (k === '0') V.reset();
+      else if (k === 't' || k === 'T') $('#vThumbsBtn').click();
+      else if (k === 'ArrowLeft')  { if (V.s > 1.01) { V.tx += pan; V.apply(false); } else V.go(-1); }
+      else if (k === 'ArrowRight') { if (V.s > 1.01) { V.tx -= pan; V.apply(false); } else V.go(1); }
+      else if (k === 'ArrowUp' && V.s > 1.01)   { V.ty += pan; V.apply(false); }
+      else if (k === 'ArrowDown' && V.s > 1.01) { V.ty -= pan; V.apply(false); }
+      else if (k === 'Tab') {                                // el foco no sale del visor
+        const f = $$('button:not([hidden]), a[href]', el).filter(n => n.offsetParent !== null);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      } else return;
+      if (k !== 'Tab') e.preventDefault();
+    });
+  })();
+
+  const GROUPS = {};   // grupo → items del visor
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    V.open(GROUPS[b.dataset.v] || [], +b.dataset.i || 0, b);
+  });
+
+  /* ── Utilidades de render ──────────────────────────────────── */
+  const withAlt = (items, label) => items.map((it, n) => ({ ...it, alt: it.title || `${label} ${n + 1}` }));
+  const dims = it => it.width && it.height ? ` width="${it.width}" height="${it.height}"` : '';
+  const hideSection = id => {
+    $(`#${id}`)?.setAttribute('hidden', '');
+    $$(`[data-s="${id}"], .menu a[href="#${id}"], .footer a[href="#${id}"]`).forEach(a => a.remove());
+  };
+  const ratioOf = it => it.width && it.height ? clamp(it.width / it.height, .5, 2.4) : null;
+
+  /* ── Inicio: nombre con tipografía variable + tira de trabajos ─ */
+  function setupHero() {
+    const name = $('#heroName'); let n = 0;
+    $$('.line', name).forEach(line => {
+      const txt = line.textContent; line.textContent = '';
+      for (const ch of txt) {
+        const s = document.createElement('span');
+        s.className = 'ch'; s.setAttribute('aria-hidden', 'true');
+        s.style.setProperty('--i', n++); s.textContent = ch === ' ' ? ' ' : ch;
+        line.appendChild(s);
+      }
+    });
+    if (reduceMotion) return;
+    const chs = $$('.ch', name);
+    let px = -9999, py = -9999, visible = true, raf = 0, rects = [];
+    const measure = () => { rects = chs.map(c => { const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); };
+    const reach = () => Math.max(160, innerWidth * .15);
+    const frame = t => {
+      raf = 0; if (!visible) return;
+      measure();
+      const R = reach();
+      chs.forEach((c, i) => {
+        const [cx, cy] = rects[i], d = Math.hypot(px - cx, py - cy) / R, f = Math.exp(-d * d * 1.6);
+        const amb = (Math.sin(t / 1100 + i * .6) + 1) / 2;
+        c.style.setProperty('--wg', Math.round(clamp(470 + amb * 90 + f * 300, 200, 800)));
+        c.style.setProperty('--w', (84 + amb * 3 + f * 13).toFixed(1));
+      });
+      raf = requestAnimationFrame(frame);
+    };
+    const kick = () => { if (!raf && visible) raf = requestAnimationFrame(frame); };
+    addEventListener('pointermove', e => { px = e.clientX; py = e.clientY; }, { passive: true });
+    document.addEventListener('pointerleave', () => { px = py = -9999; });
+    new IntersectionObserver(([en]) => { visible = en.isIntersecting; kick(); }).observe($('#inicio'));
+    kick();
   }
 
-  /* ── Helpers de render ─────────────────────────────────────── */
-  const imgTag = (it, alt, { full = false, cls = '' } = {}) =>
-    `<img src="${esc(full ? it.src : (it.thumb || it.src))}" alt="${esc(alt)}"${it.width && it.height ? ` width="${it.width}" height="${it.height}"` : ''} loading="lazy" decoding="async"${cls ? ` class="${cls}"` : ''}>`;
-  const withAlt = (items, label) => items.map((it, n) => ({ ...it, alt: it.title || `${label} ${n + 1}` }));
-  const hideSection = id => { $(`#${id}`)?.setAttribute('hidden', ''); $$(`[data-s="${id}"], .mobile-menu a[href="#${id}"], .footer a[href="#${id}"]`).forEach(a => a.remove()); };
-  const ICON_ZOOM = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm.5-7H9v2H7v1h2v2h1v-2h2V9h-2z"/></svg>';
+  function renderStrip(data) {
+    const pool = [...data.featured, ...data.designs, ...data.mockups, ...data.illustrations].filter(i => ratioOf(i));
+    const picks = pool.filter((_, i) => i % Math.max(1, Math.ceil(pool.length / 16)) === 0).slice(0, 16);
+    if (picks.length < 4) return;
+    const items = withAlt(picks, 'Trabajo'); GROUPS.strip = items;
+    const li = (it, i, dup) => `<li style="width:calc(var(--sh) * ${ratioOf(it).toFixed(4)})"${dup ? ' aria-hidden="true"' : ''}>
+      <button data-v="strip" data-i="${i}" data-cursor="Ver" aria-label="Ampliar ${esc(it.alt)}"${dup ? ' tabindex="-1"' : ''}>
+        <img src="${esc(it.thumb || it.src)}" alt="" loading="${i < 6 && !dup ? 'eager' : 'lazy'}" decoding="async"${dims(it)}></button></li>`;
+    $('#stripTrack').innerHTML = items.map((it, i) => li(it, i, false)).join('') + items.map((it, i) => li(it, i, true)).join('');
+    $('#strip').hidden = false;
+  }
 
-  const GROUPS = {};   // grupo → items (para el lightbox)
-  document.addEventListener('click', e => {
-    const b = e.target.closest('[data-lb]'); if (!b) return;
-    lb.open(GROUPS[b.dataset.lb] || [], +b.dataset.i || 0, b);
-  });
-
-  /* ── Secciones ─────────────────────────────────────────────── */
+  /* ── Destacados ────────────────────────────────────────────── */
   function renderFeatured(items) {
-    const box = $('#featuredGrid');
     if (!items.length) return hideSection('destacados');
     items = withAlt(items, 'Proyecto destacado'); GROUPS.featured = items;
-    box.innerHTML = items.map((it, i) => `
-      <article class="b-item reveal">
-        <button class="b-btn" data-lb="featured" data-i="${i}" aria-label="Ver ${esc(it.alt)}">
-          ${imgTag(it, it.alt)}
-          <span class="b-info">
-            ${it.title ? `<h3>${esc(it.title)}</h3>` : ''}
-            ${it.desc ? `<p>${esc(it.desc)}</p>` : ''}
-            ${it.tags?.length ? `<span class="tags">${it.tags.map(t => `<span>${esc(t)}</span>`).join('')}</span>` : ''}
-          </span>
-        </button>
+    $('#featuredGrid').innerHTML = items.map((it, i) => `
+      <article class="feat-item">
+        <div class="feat-media">
+          <button data-v="featured" data-i="${i}" data-cursor="Ampliar" aria-label="Ampliar ${esc(it.alt)}">
+            <img src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
+          </button>
+        </div>
+        <div class="feat-text">
+          ${it.title ? `<h3>${esc(it.title)}</h3>` : ''}
+          ${it.desc ? `<p>${esc(it.desc)}</p>` : ''}
+          ${it.tags?.length ? `<p class="feat-tags">${it.tags.map(esc).join(', ')}</p>` : ''}
+          <button class="btn btn-line btn-sm" data-v="featured" data-i="${i}">${icon('plus')} Ver completo</button>
+        </div>
       </article>`).join('');
   }
 
-  const MORE_LIMIT = { mockups: 6, designs: 9 };
-  function renderMockups(items) {
-    const box = $('#mockupsGrid');
-    if (!items.length) return hideSection('mockups');
-    items = withAlt(items, 'Mockup'); GROUPS.mockups = items;
-    box.innerHTML = items.map((it, i) => `
-      <figure class="m-card reveal"${i >= MORE_LIMIT.mockups ? ' data-extra' : ''}>
-        <button class="m-btn" data-lb="mockups" data-i="${i}" aria-label="Ampliar ${esc(it.alt)}">
-          ${imgTag(it, it.alt)}<span class="zoom">${ICON_ZOOM}</span>
-        </button>
-        ${(it.title || it.category) ? `<figcaption>${esc(it.title || it.category)}</figcaption>` : ''}
-      </figure>`).join('');
-    wireMore(box, $('#mockupsMore'), items.length, MORE_LIMIT.mockups);
+  /* ── Galería: filas justificadas que respetan cada proporción ─ */
+  const KINDS = [['mockups', 'Mockups'], ['designs', 'Diseños'], ['illustrations', 'Ilustraciones']];
+  const PAGE = 18;
+  const gal = { all: [], filter: 'all', shown: PAGE, tiles: [], list: [] };
+
+  function renderGallery(data) {
+    const byKind = Object.fromEntries(KINDS.map(([k]) => [k, withAlt(data[k], KINDS.find(x => x[0] === k)[1].replace(/s$/, ''))]));
+    gal.byKind = byKind;
+    const total = KINDS.reduce((n, [k]) => n + byKind[k].length, 0);
+    if (!total) return hideSection('galeria');
+    const kinds = KINDS.filter(([k]) => byKind[k].length);
+    $('#chips').innerHTML = [['all', 'Todo', total], ...kinds.map(([k, l]) => [k, l, byKind[k].length])]
+      .map(([k, l, n], i) => `<button class="chip" role="tab" data-f="${k}" aria-selected="${i === 0}">${l} <small>${n}</small></button>`).join('');
+    $('#chips').hidden = kinds.length < 2;
+    $('#chips').addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if (!b) return;
+      $$('.chip').forEach(c => c.setAttribute('aria-selected', c === b));
+      const box = $('#gallery'); box.classList.add('swap');
+      setTimeout(() => { gal.filter = b.dataset.f; gal.shown = PAGE; build(); box.classList.remove('swap'); }, reduceMotion ? 0 : 220);
+    });
+    $('#galMore').addEventListener('click', () => { gal.shown += PAGE; build(); });
+    $('#aboutFacts').textContent = `${total + data.logos.length + data.featured.length} piezas publicadas entre proyectos destacados, mockups, diseños, logos e ilustraciones.`;
+    new ResizeObserver(() => { const w = $('#gallery').clientWidth; if (w !== gal.w) { gal.w = w; layout(); } }).observe($('#gallery'));
+    build();
   }
 
-  function renderDesigns(items) {
-    const box = $('#designsGrid');
-    if (!items.length) return hideSection('disenos');
-    items = withAlt(items, 'Diseño'); GROUPS.designs = items;
-    box.classList.add('collapsed');
-    box.innerHTML = items.map((it, i) => `
-      <button class="d-card reveal" data-lb="designs" data-i="${i}"${i >= MORE_LIMIT.designs ? ' data-extra' : ''} aria-label="Ampliar ${esc(it.alt)}">
-        ${imgTag(it, it.alt)}
-        ${it.title ? `<span class="d-cap">${esc(it.title)}</span>` : ''}
-      </button>`).join('');
-    wireMore(box, $('#designsMore'), items.length, MORE_LIMIT.designs);
+  function pool() {
+    if (gal.filter !== 'all') return gal.byKind[gal.filter];
+    const lists = KINDS.map(([k]) => gal.byKind[k]).filter(l => l.length), out = [];       // intercala tipos
+    for (let i = 0; out.length < lists.reduce((n, l) => n + l.length, 0); i++) lists.forEach(l => { if (l[i]) out.push(l[i]); });
+    return out;
   }
 
-  function wireMore(box, btn, total, limit) {
-    if (!btn || total <= limit) return;
-    btn.hidden = false;
-    const label = () => box.classList.contains('collapsed') ? `Ver más (${total - limit})` : 'Ver menos';
-    btn.textContent = label();
-    btn.onclick = () => {
-      box.classList.toggle('collapsed'); btn.textContent = label();
-      if (box.classList.contains('collapsed')) box.closest('section').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
-      observeReveals();
+  function build() {
+    const list = pool(); gal.list = list; GROUPS.gallery = list;
+    const part = list.slice(0, gal.shown);
+    $('#galCount').textContent = `${list.length} ${list.length === 1 ? 'pieza' : 'piezas'}`;
+    const old = new Map(gal.tiles.map(t => [t._it, t]));
+    gal.tiles = part.map((it, i) => {
+      let t = old.get(it);
+      if (!t) {
+        t = document.createElement('button');
+        t.className = 'tile'; t.dataset.cursor = 'Ver'; t.setAttribute('aria-label', `Ampliar ${it.alt}`);
+        t.innerHTML = `<img src="${esc(it.thumb || it.src)}" alt="" loading="lazy" decoding="async">${it.title || it.category ? `<span class="cap">${esc(it.title || it.category)}</span>` : ''}`;
+        t._it = it; t._r = ratioOf(it) || 1.25; t._known = !!ratioOf(it);
+        const img = t.firstChild, done = () => {
+          if (!t._known && img.naturalWidth) { t._r = clamp(img.naturalWidth / img.naturalHeight, .5, 2.4); t._known = true; layoutSoon(); }
+          t.classList.add('ok');
+        };
+        img.addEventListener('load', done); img.addEventListener('error', done);
+        if (img.complete && img.naturalWidth) done();
+      }
+      t.dataset.v = 'gallery'; t.dataset.i = list.indexOf(it);
+      return t;
+    });
+    $('#galMore').hidden = list.length <= gal.shown;
+    if (!$('#galMore').hidden) $('#galMore').textContent = `Ver más piezas (${list.length - gal.shown})`;
+    layout();
+  }
+
+  let lt = 0;
+  const layoutSoon = () => { clearTimeout(lt); lt = setTimeout(layout, 80); };
+  function layout() {
+    const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { box.textContent = ''; return; }
+    const gap = W <= 700 ? 8 : 12, H = W < 520 ? 170 : W < 820 ? 200 : W < 1180 ? 260 : 300;
+    const frag = document.createDocumentFragment(); let row = [], sum = 0;
+    const flush = (full) => {
+      if (!row.length) return;
+      const gaps = gap * (row.length - 1);
+      let h = (W - gaps) / sum;
+      if (!full && h > H * 1.35) h = H;                  // la última fila no se estira
+      const el = document.createElement('div'); el.className = 'jrow'; el.style.height = `${h}px`;
+      let used = 0;
+      row.forEach((t, i) => {
+        const w = full && i === row.length - 1 ? W - gaps - used : Math.floor(t._r * h);
+        used += w; t.style.width = `${w}px`; t.style.height = `${h}px`; el.appendChild(t);
+      });
+      frag.appendChild(el); row = []; sum = 0;
     };
+    for (const t of gal.tiles) {
+      row.push(t); sum += t._r;
+      if (sum * H + gap * (row.length - 1) >= W) {
+        const h = (W - gap * (row.length - 1)) / sum;
+        if (h < H * .62 && row.length > 1) { const last = row.pop(); sum -= last._r; flush(true); row = [last]; sum = last._r; }
+        else flush(true);
+      }
+    }
+    flush(false);
+    box.textContent = ''; box.appendChild(frag);
   }
 
+  /* ── Logos ─────────────────────────────────────────────────── */
   let LOGOS = [];
   function renderLogos(items) {
-    const box = $('#logosGrid');
     if (!items.length) return hideSection('logos');
     LOGOS = items.map(l => ({ ...l, alt: l.title || 'Logo' }));
-    box.innerHTML = LOGOS.map((l, i) => {
+    $('#logosGrid').innerHTML = LOGOS.map((l, i) => {
       const n = l.variations.length;
-      return `
-      <article class="l-card reveal">
-        <button class="l-tile" data-logo="${i}" aria-label="Ver ${esc(l.title)}">${imgTag(l, l.alt, { full: true })}</button>
-        <div class="l-meta">
+      return `<article class="logo-card">
+        <button class="logo-tile" data-logo="${i}" data-cursor="Ver" aria-label="Ver ${esc(l.title)}"><img src="${esc(l.src)}" alt="${esc(l.alt)}"${dims(l)} loading="lazy" decoding="async"></button>
+        <div class="logo-meta">
           <h3>${esc(l.title)}</h3>
           ${l.desc ? `<p>${esc(l.desc)}</p>` : ''}
-          ${n > 1 ? `<button class="link" data-logo="${i}">${n} variaciones <span aria-hidden="true">→</span></button>` : ''}
-        </div>
-      </article>`;
+          ${n > 1 ? `<button data-logo="${i}">${n} variaciones</button>` : ''}
+        </div></article>`;
     }).join('');
   }
 
@@ -236,199 +460,146 @@
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-logo]'); if (!b) return;
     const l = LOGOS[+b.dataset.logo]; if (!l) return;
-    if (l.variations.length < 2) { GROUPS.logo1 = [{ ...l, src: l.src }]; return lb.open(GROUPS.logo1, 0, b); }
+    if (l.variations.length < 2) { GROUPS.logo = [{ src: l.src, title: l.title, alt: l.alt }]; return V.open(GROUPS.logo, 0, b); }
     $('#logoDialogTitle').textContent = l.title; $('#logoDialogDesc').textContent = l.desc;
-    $('#variations').innerHTML = l.variations.map(v => `
-      <figure class="v-card${/blanc|white|claro/i.test(v.label) ? ' on-dark' : ''}">
-        <div class="v-img"><img src="${esc(v.image_url)}" alt="${esc(l.title)} — ${esc(v.label)}" loading="lazy" decoding="async"></div>
+    GROUPS.vars = l.variations.map(v => ({ src: v.image_url, title: `${l.title}, ${v.label}`, alt: `${l.title}, ${v.label}` }));
+    $('#variations').innerHTML = l.variations.map((v, n) => `
+      <figure class="v-card${/blanc|white|claro|negativ/i.test(v.label) ? ' on-dark' : ''}">
+        <button class="v-img" data-v="vars" data-i="${n}" aria-label="Ampliar ${esc(v.label)}"><img src="${esc(v.image_url)}" alt="${esc(l.title)}, ${esc(v.label)}" loading="lazy" decoding="async"></button>
         <figcaption>${esc(v.label)}</figcaption>
       </figure>`).join('');
     dlg.showModal();
   });
   $('#logoDialogClose').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  // El visor se abre sobre el diálogo (que está en la capa superior): lo cerramos antes
+  document.addEventListener('click', e => { if (e.target.closest('#variations [data-v]') && dlg.open) dlg.close(); }, true);
 
-  function renderIllustrations(items) {
-    const box = $('#illustrationsGrid');
-    if (!items.length) return hideSection('ilustraciones');
-    items = withAlt(items, 'Ilustración'); GROUPS.illus = items;
-    box.innerHTML = items.map((it, i) => `
-      <button class="i-card reveal" data-lb="illus" data-i="${i}" aria-label="Ampliar ${esc(it.alt)}">
-        <img class="i-bg" src="${esc(it.thumb || it.src)}" alt="" aria-hidden="true" loading="lazy" decoding="async">
-        ${imgTag(it, it.alt, { cls: 'i-fg' })}
-        ${(it.title || it.category) ? `<span class="i-cap">${esc(it.title || it.category)}</span>` : ''}
-      </button>`).join('');
-  }
-
-  function renderHeroCollage(data) {
-    const pool = [...data.designs, ...data.featured, ...data.illustrations].filter(i => i.width && i.height);
-    const by = f => pool.find(i => f(i.width / i.height));
-    const picks = [by(r => r < .85), by(r => r >= .85 && r <= 1.15), by(r => r > 1.15)].filter(Boolean);
-    while (picks.length < 3 && pool.length) { const p = pool[picks.length]; if (!p || picks.includes(p)) break; picks.push(p); }
-    if (!picks.length) return $('#heroCollage').remove();
-    $('#heroCollage').innerHTML = picks.slice(0, 3).map((it, i) =>
-      `<div class="hc hc${i + 1}">${imgTag(it, '', { cls: '' }).replace('loading="lazy"', 'loading="eager"')}</div>`).join('');
-  }
-
-  /* ── Guías: visor por páginas (imágenes WebP, carga bajo demanda) ── */
+  /* ── Guías: páginas WebP bajo demanda ──────────────────────── */
   const pagesCache = new Map();
-  async function getPages(doc) {
-    if (pagesCache.has(doc.id)) return pagesCache.get(doc.id);
-    const p = safe(rest(`pdf_pages?select=page_number,image_url,thumb_url,width,height&document_id=eq.${encodeURIComponent(doc.id)}&order=page_number.asc`), []);
-    pagesCache.set(doc.id, p); return p;
+  function getPages(doc) {
+    if (!pagesCache.has(doc.id)) pagesCache.set(doc.id, safe(rest(`pdf_pages?select=page_number,image_url,thumb_url,width,height&document_id=eq.${encodeURIComponent(doc.id)}&order=page_number.asc`), []));
+    return pagesCache.get(doc.id);
   }
 
   function renderGuides(docs) {
     const sec = $('#guias');
     if (!docs.length) return hideSection('guias');
     sec.hidden = false;
-    const box = $('#guides');
-    const meta = d => [d.page_count ? `${d.page_count} páginas` : 'PDF', d.client, d.year].filter(Boolean).join(' · ');
-    box.innerHTML = `
-      <div class="guide-list" role="tablist" aria-label="Guías disponibles">
-        ${docs.map((d, i) => `
-          <button class="g-tab${i === 0 ? ' active' : ''}" role="tab" aria-selected="${i === 0}" data-doc="${i}">
-            <span class="g-cover">${d.cover_url ? `<img src="${esc(d.cover_url)}" alt="" loading="lazy" decoding="async">` : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm4 18H6V4h7v5h5z"/></svg>'}</span>
-            <span class="g-text"><strong>${esc(d.title)}</strong><small>${esc(meta(d))}</small></span>
-          </button>`).join('')}
+    const meta = d => [d.page_count ? `${d.page_count} páginas` : 'PDF', d.client, d.year].filter(Boolean).join('  ');
+    $('#guides').innerHTML = `
+      <div class="g-list" role="tablist" aria-label="Guías disponibles">
+        ${docs.map((d, i) => `<button class="g-tab" role="tab" aria-selected="${i === 0}" data-doc="${i}">
+          <span class="g-cover">${d.cover_url ? `<img src="${esc(d.cover_url)}" alt="" loading="lazy" decoding="async">` : icon('grid')}</span>
+          <span class="g-text"><strong>${esc(d.title)}</strong><small>${esc(meta(d))}</small></span></button>`).join('')}
       </div>
-      <div class="guide-stage" id="guideStage" aria-live="polite"></div>`;
-    const tabs = $$('.g-tab', box);
+      <div class="g-stage" id="gStage" aria-live="polite"></div>`;
+    const tabs = $$('.g-tab');
     tabs.forEach(t => t.addEventListener('click', () => {
-      tabs.forEach(x => { x.classList.toggle('active', x === t); x.setAttribute('aria-selected', x === t); });
+      tabs.forEach(x => x.setAttribute('aria-selected', x === t));
       openDoc(docs[+t.dataset.doc]);
     }));
-    // La primera guía se carga cuando la sección entra en pantalla (no antes)
     const io = new IntersectionObserver(([en]) => { if (en.isIntersecting) { io.disconnect(); openDoc(docs[0]); } }, { rootMargin: '300px' });
     io.observe(sec);
   }
 
   async function openDoc(doc) {
-    const stage = $('#guideStage');
-    const token = (stage._t = (stage._t || 0) + 1);
-    const info = `
-      <div class="stage-head">
-        <div><h3>${esc(doc.title)}</h3>${doc.description ? `<p>${esc(doc.description)}</p>` : ''}</div>
-        <div class="stage-actions">${doc.source_url ? `<a class="btn btn-ghost btn-sm" href="${esc(doc.source_url)}" target="_blank" rel="noopener">Abrir PDF</a>` : ''}</div>
-      </div>`;
-    if (!doc.page_count) {
-      stage.innerHTML = info + `<p class="empty">Esta guía todavía se ve solo como archivo PDF. ${doc.source_url ? 'Usa “Abrir PDF”.' : ''}</p>`;
-      return;
-    }
-    stage.innerHTML = info + '<div class="reader-skeleton" aria-hidden="true"></div>';
+    const stage = $('#gStage'), token = (stage._t = (stage._t || 0) + 1);
+    const facts = [doc.page_count ? `${doc.page_count} páginas` : '', doc.client, doc.year].filter(Boolean).map(f => `<span>${esc(f)}</span>`).join('');
+    const head = (action = '') => `<div class="stage-head"><div><h3>${esc(doc.title)}</h3>${doc.description ? `<p>${esc(doc.description)}</p>` : ''}${facts ? `<div class="facts">${facts}</div>` : ''}</div>${action}</div>`;
+    const link = doc.source_url ? `<a class="btn btn-line btn-sm" href="${esc(doc.source_url)}" target="_blank" rel="noopener">${icon('external')} Abrir PDF</a>` : '';
+    if (!doc.page_count) { stage.innerHTML = head(link) + '<p class="empty">Esta guía está disponible como archivo PDF.</p>'; return; }
+
+    stage.innerHTML = head() + `<div class="pages" aria-hidden="true">${'<div class="skeleton" style="width:200px"></div>'.repeat(4)}</div>`;
     const pages = await getPages(doc);
-    if (token !== stage._t) return;                       // el usuario cambió de guía
-    if (!pages.length) { stage.innerHTML = info + '<p class="empty">No se pudieron cargar las páginas. Intenta de nuevo en un momento.</p>'; return; }
+    if (token !== stage._t) return;                       // cambió de guía mientras cargaba
+    if (!pages.length) { stage.innerHTML = head(link) + '<p class="empty">No se pudieron cargar las páginas. Inténtalo de nuevo en un momento.</p>'; return; }
 
-    const first = pages[0], ar = first.width && first.height ? first.width / first.height : (doc.orientation === 'portrait' ? .75 : 1.6);
-    let cur = 0;
-    const items = pages.map((p, i) => ({ src: p.image_url, title: doc.title, desc: `Página ${i + 1} de ${pages.length}`, alt: `${doc.title} — página ${i + 1}` }));
+    const items = pages.map((p, i) => ({ src: p.image_url, thumb: p.thumb_url, title: doc.title, desc: `Página ${i + 1} de ${pages.length}`, alt: `${doc.title}, página ${i + 1}` }));
     GROUPS[`doc-${doc.id}`] = items;
-
-    stage.innerHTML = info + `
-      <div class="reader" tabindex="0" aria-label="Visor de la guía, usa las flechas del teclado">
-        <button class="r-nav r-prev icon-btn" aria-label="Página anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.4 16.6 10.8 12l4.6-4.6L14 6l-6 6 6 6z"/></svg></button>
-        <div class="r-frame" style="--ar:${ar.toFixed(4)}"><img class="r-img" alt="" decoding="async"></div>
-        <button class="r-nav r-next icon-btn" aria-label="Página siguiente"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></svg></button>
-      </div>
-      <div class="r-bar">
-        <span class="r-count"></span>
-        <button class="btn btn-ghost btn-sm r-full">Ampliar página</button>
-      </div>
-      <div class="thumbs" role="list">
-        ${pages.map((p, i) => `<button class="th" role="listitem" data-p="${i}" aria-label="Ir a la página ${i + 1}"><img src="${esc(p.thumb_url || p.image_url)}" alt="" loading="lazy" decoding="async"><b>${i + 1}</b></button>`).join('')}
+    const SHOW = 10, more = pages.length - SHOW;
+    stage.innerHTML = head(`<button class="btn btn-sm" data-v="doc-${esc(doc.id)}" data-i="0">${icon('plus')} Abrir guía</button>`) + `
+      <div class="pages">
+        ${pages.slice(0, SHOW).map((p, i) => `<button class="pg" data-v="doc-${esc(doc.id)}" data-i="${i}" data-cursor="Ver" aria-label="Página ${i + 1}">
+          <img src="${esc(p.thumb_url || p.image_url)}" alt=""${dims(p)} loading="lazy" decoding="async"><b>${i + 1}</b></button>`).join('')}
+        ${more > 0 ? `<button class="pg pg-more" data-v="doc-${esc(doc.id)}" data-i="${SHOW}">+${more} páginas</button>` : ''}
       </div>`;
-
-    const img = $('.r-img', stage), count = $('.r-count', stage), ths = $$('.th', stage), reader = $('.reader', stage);
-    const go = n => {
-      cur = (n + pages.length) % pages.length;
-      img.classList.add('swap');
-      const pre = new Image();
-      pre.onload = pre.onerror = () => { if (token !== stage._t) return; img.src = pages[cur].image_url; img.alt = items[cur].alt; img.classList.remove('swap'); };
-      pre.src = pages[cur].image_url;
-      count.textContent = `Página ${cur + 1} de ${pages.length}`;
-      ths.forEach((t, i) => t.classList.toggle('on', i === cur));
-      const th = ths[cur]; th.parentElement.scrollTo({ left: th.offsetLeft - th.parentElement.clientWidth / 2 + th.clientWidth / 2, behavior: reduceMotion ? 'auto' : 'smooth' });
-      [cur + 1, cur - 1].forEach(k => { const q = pages[(k + pages.length) % pages.length]; if (q) new Image().src = q.image_url; });
-    };
-    $('.r-prev', stage).addEventListener('click', () => go(cur - 1));
-    $('.r-next', stage).addEventListener('click', () => go(cur + 1));
-    ths.forEach(t => t.addEventListener('click', () => go(+t.dataset.p)));
-    $('.r-full', stage).addEventListener('click', e => lb.open(items, cur, e.currentTarget));
-    img.addEventListener('click', () => lb.open(items, cur, img));
-    reader.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); go(cur - 1); } if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1); } });
-    swipe(reader, d => go(cur + d));
-    go(0);
   }
 
-  /* ── Navegación, scroll y animaciones ──────────────────────── */
+  /* ── Navegación, tema y scroll ─────────────────────────────── */
   function setupUI() {
     $('#year').textContent = new Date().getFullYear();
+    const root = document.documentElement, meta = $('meta[name="theme-color"]');
 
-    const root = document.documentElement;
-    $('#themeToggle').addEventListener('click', () => {
-      const t = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', t); store.set('ag_theme', t);
+    const setTheme = (t, x, y) => {
+      const apply = () => { root.setAttribute('data-theme', t); store.set('ag_theme', t); meta?.setAttribute('content', t === 'dark' ? '#000000' : '#F3F2EF'); };
+      if (!document.startViewTransition || reduceMotion) return apply();
+      const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+      const vt = document.startViewTransition(apply);
+      vt.ready.then(() => root.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+        { duration: 750, easing: 'cubic-bezier(.22,1,.36,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+    };
+    $('#themeToggle').addEventListener('click', e => {
+      const b = e.currentTarget.getBoundingClientRect();
+      setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', b.left + b.width / 2, b.top + b.height / 2);
     });
 
-    const burger = $('#burger'), menu = $('#mobileMenu');
+    const burger = $('#burger'), menu = $('#menu');
     const setMenu = open => { menu.hidden = !open; burger.setAttribute('aria-expanded', open); burger.classList.toggle('open', open); document.body.classList.toggle('no-scroll', open); };
     burger.addEventListener('click', () => setMenu(menu.hidden));
     menu.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) setMenu(false); });
+    matchMedia('(min-width:1040px)').addEventListener('change', e => { if (e.matches && !menu.hidden) setMenu(false); });
 
-    const bar = $('#progress'), nav = $('#nav'); let tick = false;
-    addEventListener('scroll', () => {
+    const bar = $('#progress'), nav = $('#nav'); let tick = false, last = scrollY;
+    const onScroll = () => {
       if (tick) return; tick = true;
       requestAnimationFrame(() => {
-        const h = document.documentElement.scrollHeight - innerHeight;
-        bar.style.transform = `scaleX(${h > 0 ? scrollY / h : 0})`;
-        nav.classList.toggle('scrolled', scrollY > 24); tick = false;
+        const y = scrollY, h = document.documentElement.scrollHeight - innerHeight;
+        bar.style.transform = `scaleX(${h > 0 ? y / h : 0})`;
+        nav.classList.toggle('scrolled', y > 24);
+        if (menu.hidden) nav.classList.toggle('hide', y > 240 && y > last + 4 ? true : y < last - 4 ? false : nav.classList.contains('hide'));
+        last = y; tick = false;
       });
-    }, { passive: true });
+    };
+    addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
     const links = $$('#navLinks a');
     const spy = new IntersectionObserver(es => es.forEach(en => {
       if (en.isIntersecting) links.forEach(a => a.classList.toggle('active', a.dataset.s === en.target.id));
     }), { rootMargin: '-45% 0px -50% 0px' });
     $$('main > section[id]').forEach(s => spy.observe(s));
-  }
 
-  let revealIO;
-  function observeReveals() {
-    if (!revealIO) revealIO = new IntersectionObserver(es => es.forEach(en => {
-      if (en.isIntersecting) { en.target.classList.add('in'); revealIO.unobserve(en.target); }
-    }), { rootMargin: '0px 0px -8% 0px' });
-    $$('.reveal:not(.in)').forEach(el => reduceMotion ? el.classList.add('in') : revealIO.observe(el));
-  }
-
-  function countUp(total) {
-    $('#statProjects').dataset.count = total;
-    const io = new IntersectionObserver(es => es.forEach(en => {
-      if (!en.isIntersecting) return; io.unobserve(en.target);
-      const to = +en.target.dataset.count || 0, t0 = performance.now(), dur = reduceMotion ? 1 : 1100;
-      const step = t => { const p = Math.min(1, (t - t0) / dur); en.target.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
-      requestAnimationFrame(step);
-    }));
-    $$('[data-count]').forEach(el => io.observe(el));
+    if (finePointer) {                                   // burbuja del cursor sobre las piezas
+      const cur = $('#cursor'); let on = false;
+      addEventListener('pointermove', e => {
+        if (e.pointerType !== 'mouse') return;
+        cur.style.setProperty('--x', `${e.clientX}px`); cur.style.setProperty('--y', `${e.clientY}px`);
+        const t = e.target.closest?.('[data-cursor]');
+        if (t && V.el.hidden) { cur.dataset.label = t.dataset.cursor || 'Ver'; if (!on) { cur.classList.add('on'); on = true; } }
+        else if (on) { cur.classList.remove('on'); on = false; }
+      }, { passive: true });
+      document.addEventListener('pointerleave', () => { cur.classList.remove('on'); on = false; });
+    }
   }
 
   /* ── Contacto ──────────────────────────────────────────────── */
   function setupContact(contact = {}) {
-    let wa = String(contact.whatsapp || '51977575523').replace(/\D/g, '');
+    const wa = String(contact.whatsapp || '51977575523').replace(/\D/g, '');
     const fmt = wa.startsWith('51') && wa.length === 11 ? `+51 ${wa.slice(2, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
     $('#cWhats').href = `https://wa.me/${wa}`; $('#cWhats').textContent = fmt;
     $('#cWhatsBtn').href = `https://wa.me/${wa}?text=${encodeURIComponent('Hola Ana Lucía, me interesa trabajar contigo')}`;
     if (contact.email) { $('#cEmail').href = `mailto:${contact.email}`; $('#cEmail').textContent = contact.email; }
     if (contact.instagram) {
       const u = String(contact.instagram).replace(/^@/, '').replace(/[^\w.]/g, '');
-      $('.contact-list').insertAdjacentHTML('beforeend', `<li><span class="ci"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm5.2-3.2a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4z"/></svg></span><div><small>Instagram</small><a href="https://instagram.com/${u}" target="_blank" rel="noopener">@${u}</a></div></li>`);
+      if (u) $('.contact-list').insertAdjacentHTML('beforeend', `<li>${icon('insta')}<a href="https://instagram.com/${u}" target="_blank" rel="noopener">@${u}</a></li>`);
     }
     $('#contactForm').addEventListener('submit', e => {
       e.preventDefault();
       const v = id => $(id).value.trim(), msg = $('#formMsg');
       if (!v('#fName') || !/^\S+@\S+\.\S+$/.test(v('#fEmail')) || !v('#fService') || !v('#fMessage')) {
-        msg.textContent = 'Completa nombre, un email válido, el tipo de proyecto y tu mensaje.'; msg.className = 'form-msg err'; return;
+        msg.textContent = 'Completa tu nombre, un email válido, el tipo de proyecto y tu mensaje.'; msg.className = 'form-msg err'; return;
       }
       const text = `Hola Ana Lucía, soy ${v('#fName')} (${v('#fEmail')}).\nProyecto: ${v('#fService')}\n\n${v('#fMessage')}`;
       window.open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
@@ -439,7 +610,7 @@
 
   /* ── Arranque ──────────────────────────────────────────────── */
   async function init() {
-    setupUI();
+    setupUI(); setupHero();
     const { data, docs, settings } = await loadAll();
     applyTheme(settings.theme);
 
@@ -450,16 +621,12 @@
     });
     const run = (id, fn) => { if (!off.has(id)) fn(); };
 
-    renderHeroCollage(data);
+    renderStrip(data);
     run('destacados', () => renderFeatured(data.featured));
-    run('mockups', () => renderMockups(data.mockups));
-    run('disenos', () => renderDesigns(data.designs));
+    run('galeria', () => renderGallery(data));
     run('logos', () => renderLogos(data.logos));
-    run('ilustraciones', () => renderIllustrations(data.illustrations));
     run('guias', () => renderGuides(docs));
     setupContact(settings.contact);
-    countUp(data.mockups.length + data.designs.length + data.logos.length + data.illustrations.length);
-    observeReveals();
   }
   init();
 })();

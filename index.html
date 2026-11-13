@@ -3,255 +3,221 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Ana García — Diseñadora Gráfica Digital</title>
-  <meta name="description" content="Ana Lucía García Lachira — Diseñadora Gráfica Digital en Piura, Perú. Branding, mockups, logos e ilustraciones.">
+  <title>Ana García — Diseñadora gráfica digital</title>
+  <meta name="description" content="Ana Lucía García Lachira, diseñadora gráfica digital en Piura, Perú. Identidades, mockups, diseños e ilustraciones.">
   <meta name="author" content="Ana Lucía García Lachira">
-  <meta name="theme-color" content="#7C3AED">
-  <meta property="og:title"       content="Ana García — Diseñadora Gráfica Digital">
-  <meta property="og:description" content="Portfolio de diseño gráfico, branding e ilustración">
+  <meta name="theme-color" content="#000000">
+  <meta property="og:title"       content="Ana García — Diseñadora gráfica digital">
+  <meta property="og:description" content="Portfolio de identidades, mockups, diseños e ilustraciones.">
   <meta property="og:image"       content="imagenes/logo.png">
   <meta property="og:type"        content="website">
   <link rel="icon" type="image/png" href="imagenes/logo.png">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link id="fontsLink" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap">
+  <link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
-
-  <!-- Aplica el tema guardado antes de pintar (evita parpadeo) -->
   <script>
     (function () {
       document.documentElement.classList.add('js');
       var t = null;
       try { t = localStorage.getItem('ag_theme'); } catch (e) {}
-      if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
 </head>
 <body>
+
+<!-- Íconos (un solo juego, trazo uniforme) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.8 6.8 0 0 0 9.7 9.7z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 5 7.5 12l7 7"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5 11 13M17.5 14v4.5a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1H10"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 20l1.3-4A8.2 8.2 0 1 1 8.2 18.7L4 20z"/><path d="M9 9.5c.3 2.4 2.3 4.4 5 5.2l1.3-1.4-1.9-1-.9.8c-.8-.3-1.7-1.2-2-2l.8-.9-1-1.9z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.5-5.7 6.5-10.6a6.5 6.5 0 1 0-13 0C5.5 15.300 12 21 12 21z"/><circle cx="12" cy="10.2" r="2.3"/></symbol>
+    <symbol id="i-insta" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17" cy="7" r=".6"/></symbol>
+    <symbol id="i-ads" viewBox="0 0 24 24"><path d="M4 10.5v3a1 1 0 0 0 1 1h2.5l5 3.8V5.7l-5 3.8H5a1 1 0 0 0-1 1z"/><path d="M16 9.2a4 4 0 0 1 0 5.6M18.800 6.800a8 8 0 0 1 0 10.400"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4.500 19.500 5.600 15 16 4.600a2.100 2.100 0 0 1 3 3L8.600 18l-4.100 1.500z"/><path d="m14 6.800 3.200 3.200"/></symbol>
+    <symbol id="i-mock" viewBox="0 0 24 24"><rect x="3.500" y="4.500" width="17" height="11.500" rx="2"/><path d="M8.500 20h7M12 16v4"/></symbol>
+    <symbol id="i-shapes" viewBox="0 0 24 24"><circle cx="7.500" cy="7.500" r="4"/><rect x="12.500" y="12.500" width="8" height="8" rx="1.500"/><path d="M17 3.500l4 6.500h-8z"/></symbol>
+  </defs>
+</svg>
+
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <div class="progress" id="progress" aria-hidden="true"></div>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
 <div class="grain" aria-hidden="true"></div>
+<div class="cur" id="cursor" aria-hidden="true"></div>
 
-<!-- ══ NAVEGACIÓN ══════════════════════════════════════════════ -->
+<!-- ── Navegación ───────────────────────────────────────────── -->
 <header class="nav" id="nav">
-  <div class="nav-pill">
-    <a href="#inicio" class="nav-brand" aria-label="Ir al inicio">
-      <img src="imagenes/logo.png" alt="" width="32" height="32">
+  <div class="container nav-in">
+    <a href="#inicio" class="brand" aria-label="Ana García, ir al inicio">
+      <img src="imagenes/logo.png" alt="" width="34" height="34">
       <span>Ana García</span>
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Secciones">
-      <a href="#sobre-mi"      data-s="sobre-mi">Sobre mí</a>
-      <a href="#destacados"    data-s="destacados">Destacados</a>
-      <a href="#mockups"       data-s="mockups">Mockups</a>
-      <a href="#disenos"       data-s="disenos">Diseños</a>
-      <a href="#logos"         data-s="logos">Logos</a>
-      <a href="#ilustraciones" data-s="ilustraciones">Ilustraciones</a>
-      <a href="#guias"         data-s="guias">Guías</a>
+      <a href="#destacados" data-s="destacados">Destacados</a>
+      <a href="#galeria"    data-s="galeria">Galería</a>
+      <a href="#logos"      data-s="logos">Logos</a>
+      <a href="#guias"      data-s="guias">Guías</a>
+      <a href="#sobre-mi"   data-s="sobre-mi">Sobre mí</a>
     </nav>
-    <button class="icon-btn" id="themeToggle" aria-label="Cambiar entre modo claro y oscuro">
-      <svg class="i-sun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <svg class="i-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <button class="icon-btn theme-btn" id="themeToggle" aria-label="Cambiar entre modo claro y oscuro">
+      <svg class="i i-sunx"><use href="#i-sun"/></svg>
+      <svg class="i i-moonx"><use href="#i-moon"/></svg>
     </button>
-    <a href="#contacto" class="btn btn-sm nav-cta">Contacto</a>
-    <button class="icon-btn burger" id="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu">
-      <span></span><span></span>
-    </button>
+    <a href="#contacto" class="btn btn-sm nav-cta">Escríbeme</a>
+    <button class="icon-btn burger" id="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu"><span></span><span></span></button>
   </div>
 </header>
 
-<div class="mobile-menu" id="mobileMenu" hidden>
+<div class="menu" id="menu" hidden>
   <nav aria-label="Menú móvil">
-    <a href="#sobre-mi">Sobre mí</a>
     <a href="#destacados">Destacados</a>
-    <a href="#mockups">Mockups</a>
-    <a href="#disenos">Diseños</a>
+    <a href="#galeria">Galería</a>
     <a href="#logos">Logos</a>
-    <a href="#ilustraciones">Ilustraciones</a>
     <a href="#guias">Guías</a>
+    <a href="#sobre-mi">Sobre mí</a>
     <a href="#contacto">Contacto</a>
   </nav>
 </div>
 
 <main id="contenido">
 
-<!-- ══ HERO ════════════════════════════════════════════════════ -->
+<!-- ── Inicio ───────────────────────────────────────────────── -->
 <section class="hero" id="inicio" data-theme-section="inicio">
-  <div class="hero-blob b1" aria-hidden="true"></div>
-  <div class="hero-blob b2" aria-hidden="true"></div>
-  <div class="container hero-grid">
-    <div class="hero-copy">
-      <p class="eyebrow reveal"><span class="dot"></span> Disponible para proyectos · Piura, Perú</p>
-      <h1 class="hero-title reveal">
-        <span>Ana <em>Lucía</em></span>
-        <span class="light">García Lachira</span>
-      </h1>
-      <p class="hero-role reveal">Diseñadora gráfica digital</p>
-      <p class="hero-lead reveal">Creo identidades, mockups e ilustraciones que conectan marcas con su audiencia — con ideas que tienen alma visual.</p>
-      <div class="hero-actions reveal">
-        <a href="#destacados" class="btn">Ver portfolio</a>
-        <a href="#contacto" class="btn btn-ghost">Hablemos</a>
+  <div class="container hero-main">
+    <h1 class="name" id="heroName" aria-label="Ana Lucía García Lachira">
+      <span class="line">Ana Lucía</span>
+      <span class="line">García Lachira</span>
+    </h1>
+    <div class="hero-foot">
+      <p class="hero-lead">Diseñadora gráfica digital. Identidades, mockups e ilustraciones con alma visual.</p>
+      <div class="hero-cta">
+        <a class="btn" href="#galeria">Ver el trabajo</a>
+        <a class="btn btn-line" href="#contacto">Escríbeme</a>
       </div>
-      <dl class="stats reveal">
-        <div><dt>Proyectos</dt><dd data-count id="statProjects">0</dd></div>
-        <div><dt>Herramientas</dt><dd data-count="4">0</dd></div>
-        <div><dt>Años creando</dt><dd data-count="2">0</dd></div>
-      </dl>
-    </div>
-    <div class="hero-collage reveal" id="heroCollage" aria-hidden="true"></div>
-  </div>
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track">
-      <span>Branding</span><span>Mockups</span><span>Ilustración digital</span><span>Diseño publicitario</span><span>Logos</span><span>Manuales de marca</span>
-      <span>Branding</span><span>Mockups</span><span>Ilustración digital</span><span>Diseño publicitario</span><span>Logos</span><span>Manuales de marca</span>
+      <p class="hero-meta"><span class="live"></span>Piura, Perú. Disponible para proyectos.</p>
     </div>
   </div>
-</section>
-
-<!-- ══ SOBRE MÍ ════════════════════════════════════════════════ -->
-<section class="section" id="sobre-mi" data-theme-section="sobre-mi">
-  <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">01 — Sobre mí</span>
-      <h2>Ideas con <em>alma</em> visual</h2>
-    </header>
-    <div class="about">
-      <div class="about-text">
-        <article class="reveal">
-          <h3>¿Quién soy?</h3>
-          <p>Hola, soy Ana Lucía, diseñadora gráfica digital en formación, apasionada por crear ideas con alma visual.</p>
-        </article>
-        <article class="reveal">
-          <h3>¿Qué me inspira?</h3>
-          <p>La música me gusta mucho y es una de mis inspiraciones: hace que, de la nada, surjan mis ideas, y al plasmarlas puedo expresar muchas emociones.</p>
-        </article>
-      </div>
-      <div class="about-side">
-        <div class="reveal">
-          <h3 class="mini-title">Áreas que disfruto diseñar</h3>
-          <ul class="skills">
-            <li><img src="imagenes/Icono - Diseño Publicitario.png" alt="" width="44" height="44"><span>Diseño publicitario</span></li>
-            <li><img src="imagenes/Icono - Ilustracion Digital.png" alt="" width="44" height="44"><span>Ilustración digital</span></li>
-            <li><img src="imagenes/Icono - Diseño de Mockup.png" alt="" width="44" height="44"><span>Diseño de mockup</span></li>
-            <li><img src="imagenes/Icono - Diseño de Logos.png" alt="" width="44" height="44"><span>Diseño de logos</span></li>
-          </ul>
-        </div>
-        <div class="reveal">
-          <h3 class="mini-title">Herramientas</h3>
-          <ul class="tools">
-            <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/photoshop/photoshop-original.svg" alt="" width="22" height="22" onerror="this.remove()">Photoshop</li>
-            <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/illustrator/illustrator-original.svg" alt="" width="22" height="22" onerror="this.remove()">Illustrator</li>
-            <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/aftereffects/aftereffects-original.svg" alt="" width="22" height="22" onerror="this.remove()">After Effects</li>
-            <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/indesign/indesign-original.svg" alt="" width="22" height="22" onerror="this.remove()">InDesign</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <div class="strip" id="strip" aria-label="Muestra de trabajos" hidden>
+    <ul class="strip-track" id="stripTrack"></ul>
   </div>
 </section>
 
-<!-- ══ DESTACADOS ══════════════════════════════════════════════ -->
-<section class="section alt" id="destacados" data-theme-section="destacados">
+<!-- ── Destacados ───────────────────────────────────────────── -->
+<section class="section" id="destacados" data-theme-section="destacados">
   <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">02 — Destacados</span>
-      <h2>Lo mejor de mi <em>trabajo</em></h2>
+    <header class="sec-head">
+      <h2>Trabajo destacado</h2>
+      <p>Tres piezas para empezar.</p>
     </header>
-    <div class="bento" id="featuredGrid"></div>
+    <div class="feat" id="featuredGrid"></div>
   </div>
 </section>
 
-<!-- ══ MOCKUPS ═════════════════════════════════════════════════ -->
-<section class="section" id="mockups" data-theme-section="mockups">
+<!-- ── Galería ──────────────────────────────────────────────── -->
+<section class="section" id="galeria" data-theme-section="galeria">
   <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">03 — Mockups</span>
-      <h2>Presentaciones <em>profesionales</em></h2>
-      <p>Cómo se ve una marca en el mundo real.</p>
+    <header class="sec-head">
+      <div><h2>Galería</h2><p id="galCount"></p></div>
+      <div class="chips" id="chips" role="tablist" aria-label="Filtrar por tipo"></div>
     </header>
-    <div class="mockup-grid collapsed" id="mockupsGrid"></div>
-    <div class="more-row"><button class="btn btn-ghost" id="mockupsMore" hidden>Ver más</button></div>
+    <div class="justified" id="gallery" aria-live="polite"></div>
+    <div class="more-row"><button class="btn btn-line" id="galMore" hidden>Ver más piezas</button></div>
   </div>
 </section>
 
-<!-- ══ DISEÑOS ═════════════════════════════════════════════════ -->
-<section class="section alt" id="disenos" data-theme-section="disenos">
-  <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">04 — Diseños</span>
-      <h2>Creatividad en <em>cada formato</em></h2>
-    </header>
-    <div class="masonry" id="designsGrid"></div>
-    <div class="more-row"><button class="btn btn-ghost" id="designsMore" hidden>Ver más</button></div>
-  </div>
-</section>
-
-<!-- ══ LOGOS ═══════════════════════════════════════════════════ -->
+<!-- ── Logos ────────────────────────────────────────────────── -->
 <section class="section" id="logos" data-theme-section="logos">
   <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">05 — Logos</span>
-      <h2>Identidades <em>memorables</em></h2>
+    <header class="sec-head">
+      <h2>Logos</h2>
+      <p>Cada marca con sus versiones.</p>
     </header>
-    <div class="snap-grid logos-grid" id="logosGrid"></div>
+    <div class="logo-grid" id="logosGrid"></div>
   </div>
 </section>
 
-<!-- ══ ILUSTRACIONES ═══════════════════════════════════════════ -->
-<section class="section alt" id="ilustraciones" data-theme-section="ilustraciones">
-  <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">06 — Ilustraciones</span>
-      <h2>Arte digital con <em>personalidad</em></h2>
-    </header>
-    <div class="snap-grid illus-grid" id="illustrationsGrid"></div>
-  </div>
-</section>
-
-<!-- ══ GUÍAS ═══════════════════════════════════════════════════ -->
+<!-- ── Guías ────────────────────────────────────────────────── -->
 <section class="section" id="guias" data-theme-section="guias" hidden>
   <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">07 — Guías visuales</span>
-      <h2>Manuales de marca <em>completos</em></h2>
-      <p>Hojea cada guía página por página.</p>
+    <header class="sec-head">
+      <h2>Guías de marca</h2>
+      <p>Manuales completos. Ábrelos y hazles zoom.</p>
     </header>
     <div class="guides" id="guides"></div>
   </div>
 </section>
 
-<!-- ══ CONTACTO ════════════════════════════════════════════════ -->
-<section class="section alt contact" id="contacto" data-theme-section="contacto">
-  <div class="container">
-    <header class="sec-head reveal">
-      <span class="eyebrow">08 — Contacto</span>
-      <h2>Trabajemos <em>juntos</em></h2>
-      <p>Disponible para proyectos freelance, prácticas profesionales y colaboraciones creativas.</p>
-    </header>
-    <div class="contact-grid">
-      <div class="contact-card reveal">
-        <ul class="contact-list">
-          <li><span class="ci"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8l-8 5-8-5V6l8 5 8-5m0-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg></span><div><small>Email</small><a id="cEmail" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a></div></li>
-          <li><span class="ci"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></span><div><small>WhatsApp</small><a id="cWhats" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a></div></li>
-          <li><span class="ci"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></span><div><small>Ubicación</small><span>Piura, Perú</span></div></li>
+<!-- ── Sobre mí ─────────────────────────────────────────────── -->
+<section class="section" id="sobre-mi" data-theme-section="sobre-mi">
+  <div class="container about">
+    <div class="about-main">
+      <h2>Sobre mí</h2>
+      <p class="about-lead">Soy Ana Lucía, diseñadora gráfica digital en formación. La música es mi inspiración: de ahí salen las ideas, y al plasmarlas expreso muchas emociones.</p>
+      <p class="about-facts" id="aboutFacts"></p>
+    </div>
+    <div class="about-side">
+      <div>
+        <h3>Lo que más disfruto diseñar</h3>
+        <ul class="areas">
+          <li><svg class="i"><use href="#i-ads"/></svg>Diseño publicitario</li>
+          <li><svg class="i"><use href="#i-pen"/></svg>Ilustración digital</li>
+          <li><svg class="i"><use href="#i-mock"/></svg>Mockups</li>
+          <li><svg class="i"><use href="#i-shapes"/></svg>Logos</li>
         </ul>
-        <a id="cWhatsBtn" class="btn btn-wa" href="https://wa.me/51977575523?text=Hola%20Ana%20Luc%C3%ADa%2C%20me%20interesa%20trabajar%20contigo" target="_blank" rel="noopener">Chatear por WhatsApp</a>
       </div>
-      <form class="contact-form reveal" id="contactForm" novalidate>
-        <label>Nombre *<input type="text" id="fName" required autocomplete="name"></label>
-        <label>Email *<input type="email" id="fEmail" required autocomplete="email"></label>
-        <label>Tipo de proyecto *
+      <div>
+        <h3>Herramientas</h3>
+        <ul class="tools">
+          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/photoshop/photoshop-original.svg" alt="" width="22" height="22" onerror="this.remove()">Photoshop</li>
+          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/illustrator/illustrator-original.svg" alt="" width="22" height="22" onerror="this.remove()">Illustrator</li>
+          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/aftereffects/aftereffects-original.svg" alt="" width="22" height="22" onerror="this.remove()">After Effects</li>
+          <li><img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/indesign/indesign-original.svg" alt="" width="22" height="22" onerror="this.remove()">InDesign</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Contacto ─────────────────────────────────────────────── -->
+<section class="section contact" id="contacto" data-theme-section="contacto">
+  <div class="container">
+    <h2 class="contact-title">¿Tienes un proyecto? Cuéntame.</h2>
+    <div class="contact-grid">
+      <div class="contact-side">
+        <p class="contact-lead">Freelance, prácticas y colaboraciones creativas. Respondo por WhatsApp o por correo.</p>
+        <ul class="contact-list">
+          <li><svg class="i"><use href="#i-mail"/></svg><a id="cEmail" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a></li>
+          <li><svg class="i"><use href="#i-chat"/></svg><a id="cWhats" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a></li>
+          <li><svg class="i"><use href="#i-pin"/></svg><span>Piura, Perú</span></li>
+        </ul>
+        <a id="cWhatsBtn" class="btn btn-wa" href="https://wa.me/51977575523?text=Hola%20Ana%20Luc%C3%ADa%2C%20me%20interesa%20trabajar%20contigo" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+      </div>
+      <form class="form" id="contactForm" novalidate>
+        <label>Nombre<input type="text" id="fName" required autocomplete="name"></label>
+        <label>Correo<input type="email" id="fEmail" required autocomplete="email"></label>
+        <label>¿Qué necesitas?
           <select id="fService" required>
-            <option value="">Selecciona un servicio</option>
-            <option>Branding &amp; Identidad Visual</option>
-            <option>Diseño Gráfico</option>
-            <option>Mockups &amp; Presentaciones</option>
-            <option>Ilustraciones</option>
+            <option value="">Elige una opción</option>
+            <option>Identidad de marca</option>
+            <option>Diseño gráfico</option>
+            <option>Mockups y presentaciones</option>
+            <option>Ilustración</option>
             <option>Otro</option>
           </select>
         </label>
-        <label>Mensaje *<textarea id="fMessage" rows="4" placeholder="Cuéntame sobre tu proyecto…" required></textarea></label>
+        <label>Mensaje<textarea id="fMessage" rows="4" placeholder="Cuéntame de tu proyecto" required></textarea></label>
         <p class="form-msg" id="formMsg" role="status"></p>
         <button type="submit" class="btn">Enviar por WhatsApp</button>
       </form>
@@ -264,10 +230,17 @@
   <div class="container footer-in">
     <div class="footer-brand">
       <img src="imagenes/logo.png" alt="" width="40" height="40">
-      <div><strong>Ana García</strong><span>Diseñadora gráfica digital</span></div>
+      <div><strong>Ana Lucía García Lachira</strong><span>Diseñadora gráfica digital en Piura, Perú</span></div>
     </div>
-    <p>&copy; <span id="year">2026</span> Ana Lucía García Lachira. Todos los derechos reservados.</p>
-    <a href="#inicio" class="icon-btn" aria-label="Volver arriba"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.4 15.4 12 10.8l4.6 4.6L18 14l-6-6-6 6z"/></svg></a>
+    <nav class="footer-nav" aria-label="Pie de página">
+      <a href="#destacados">Destacados</a>
+      <a href="#galeria">Galería</a>
+      <a href="#logos">Logos</a>
+      <a href="#sobre-mi">Sobre mí</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
+    <a href="#inicio" class="icon-btn up" aria-label="Volver arriba"><svg class="i"><use href="#i-up"/></svg></a>
+    <p class="copy">&copy; <span id="year">2026</span> Ana Lucía García Lachira. Todos los derechos reservados.</p>
   </div>
 </footer>
 
@@ -275,18 +248,28 @@
 <dialog class="dialog" id="logoDialog" aria-labelledby="logoDialogTitle">
   <div class="dialog-head">
     <div><h3 id="logoDialogTitle"></h3><p id="logoDialogDesc"></p></div>
-    <button class="icon-btn" id="logoDialogClose" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6z"/></svg></button>
+    <button class="icon-btn" id="logoDialogClose" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
   </div>
   <div class="variations" id="variations"></div>
 </dialog>
 
-<!-- Visor de imágenes -->
-<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Visor de imágenes" hidden>
-  <button class="lb-close icon-btn" id="lbClose" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4l5.6 5.6L5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6z"/></svg></button>
-  <button class="lb-nav lb-prev icon-btn" id="lbPrev" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.4 16.6 10.8 12l4.6-4.6L14 6l-6 6 6 6z"/></svg></button>
-  <button class="lb-nav lb-next icon-btn" id="lbNext" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.6 16.6 13.2 12 8.6 7.4 10 6l6 6-6 6z"/></svg></button>
-  <figure class="lb-fig"><img id="lbImg" alt=""><figcaption><strong id="lbTitle"></strong><span id="lbDesc"></span></figcaption></figure>
-  <span class="lb-count" id="lbCount"></span>
+<!-- Visor con zoom -->
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Visor de imágenes" hidden>
+  <header class="v-top">
+    <div class="v-title"><strong id="vTitle"></strong><span id="vCount"></span></div>
+    <div class="v-tools">
+      <button id="vZoomOut" aria-label="Alejar"><svg class="i"><use href="#i-minus"/></svg></button>
+      <button id="vZoomLevel" class="v-level" aria-label="Ajustar a la pantalla">100%</button>
+      <button id="vZoomIn" aria-label="Acercar"><svg class="i"><use href="#i-plus"/></svg></button>
+      <a id="vOpen" href="#" target="_blank" rel="noopener" aria-label="Abrir imagen original en otra pestaña"><svg class="i"><use href="#i-external"/></svg></a>
+      <button id="vThumbsBtn" aria-label="Mostrar u ocultar miniaturas" aria-pressed="true"><svg class="i"><use href="#i-grid"/></svg></button>
+      <button id="vClose" aria-label="Cerrar visor"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+  </header>
+  <div class="v-stage" id="vStage"><img id="vImg" alt="" draggable="false"><span class="v-spin" aria-hidden="true"></span></div>
+  <button class="v-nav v-prev" id="vPrev" aria-label="Anterior"><svg class="i"><use href="#i-left"/></svg></button>
+  <button class="v-nav v-next" id="vNext" aria-label="Siguiente"><svg class="i"><use href="#i-right"/></svg></button>
+  <div class="v-thumbs" id="vThumbs"></div>
 </div>
 
 <script src="config.js"></script>

@@ -81,26 +81,15 @@ CREATE TABLE IF NOT EXISTS site_settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Valores iniciales = los colores y fuentes actuales del sitio
+-- Valores iniciales. El sitio usa su diseño por defecto hasta que el panel
+-- guarde un tema propio con "customized": true.
 INSERT INTO site_settings (key, value) VALUES
-('theme', '{
-  "colors": {
-    "accent":"#7C3AED", "accentLight":"#A78BFA",
-    "bg":"#FAF9F7", "bgCard":"#FFFFFF", "bgSoft":"#F3F0EB",
-    "text":"#1E1B18", "text2":"#6B6560",
-    "dark": { "bg":"#1C1A17", "bgCard":"#252320", "bgSoft":"#2C2924", "text":"#EDE9E3", "text2":"#A09890" }
-  },
-  "fonts": { "display":"Playfair Display", "body":"Inter" },
-  "radius": "soft",
-  "sections": {}
-}'::jsonb),
+('theme', '{"customized": false, "colors": {}, "fonts": {}, "radius": "soft", "sections": {}}'::jsonb),
 ('sections', '[
   {"id":"destacados","label":"Destacados","visible":true},
-  {"id":"mockups","label":"Mockups","visible":true},
-  {"id":"disenos","label":"Diseños","visible":true},
+  {"id":"galeria","label":"Galería","visible":true},
   {"id":"logos","label":"Logos","visible":true},
-  {"id":"ilustraciones","label":"Ilustraciones","visible":true},
-  {"id":"guias","label":"Guías PDF","visible":true}
+  {"id":"guias","label":"Guías","visible":true}
 ]'::jsonb),
 ('contact', '{"whatsapp":"51977575523","email":"","instagram":""}'::jsonb)
 ON CONFLICT (key) DO NOTHING;

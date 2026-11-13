@@ -32,6 +32,18 @@ LOGOS = [  # (archivo, nombre, descripción, [(variación, archivo)])
     ('logos/logo3.png', 'Grin Network', 'Tecnología Verde', [('Verde', 'logos/logo3.png')]),
 ]
 
+def sig(path):
+    with Image.open(path) as im: return list(im.convert('L').resize((24, 24)).tobytes())
+def dedupe(items, against):
+    """Quita de `items` las piezas que ya aparecen (visualmente iguales) en `against`."""
+    ref = [sig(i['image_url']) for i in against]
+    keep = []
+    for it in items:
+        s = sig(it['image_url'])
+        if any(sum(abs(a - b) for a, b in zip(s, r)) / len(s) < 6 for r in ref): print('  duplicada omitida:', it['image_url'])
+        else: keep.append(it)
+    return keep
+
 out = {'mockups': folder('mockups', 'Presentación de Marca'),
        'designs': folder('diseños', 'Diseño Gráfico'),
        'illustrations': folder('ilustraciones', 'Arte Digital'),
@@ -42,6 +54,8 @@ for f, name, desc, vars_ in LOGOS:
     it = item(os.path.join(IMG, f), name, '', desc)
     it['variations'] = [{'label': l, 'image_url': IMG + '/' + p} for l, p in vars_]
     out['logos'].append(it)
+out['designs'] = dedupe(out['designs'], out['featured'])
+out['illustrations'] = dedupe(out['illustrations'], out['featured'])
 os.makedirs('data', exist_ok=True)
 json.dump(out, open('data/local-content.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 print({k: len(v) for k, v in out.items()})
