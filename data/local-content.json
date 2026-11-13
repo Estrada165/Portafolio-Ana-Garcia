@@ -1,0 +1,308 @@
+{
+ "mockups": [
+  {
+   "image_url": "imagenes/mockups/mockup1.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup2.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup3.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup4.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup5.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup6.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup7.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup8.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup9.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup10.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup11.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup12.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup13.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup14.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  },
+  {
+   "image_url": "imagenes/mockups/mockup15.jpg",
+   "title": "",
+   "category": "Presentación de Marca",
+   "width": 2000,
+   "height": 1125
+  }
+ ],
+ "designs": [
+  {
+   "image_url": "imagenes/diseños/diseño1.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 675
+  },
+  {
+   "image_url": "imagenes/diseños/diseño2.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño3.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1080,
+   "height": 1080
+  },
+  {
+   "image_url": "imagenes/diseños/diseño4.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño5.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1280,
+   "height": 852
+  },
+  {
+   "image_url": "imagenes/diseños/diseño6.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño7.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1600,
+   "height": 1600
+  },
+  {
+   "image_url": "imagenes/diseños/diseño8.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño9.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño10.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño11.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1200,
+   "height": 1200
+  },
+  {
+   "image_url": "imagenes/diseños/diseño12.jpg",
+   "title": "",
+   "category": "Diseño Gráfico",
+   "width": 1140,
+   "height": 1600
+  }
+ ],
+ "illustrations": [
+  {
+   "image_url": "imagenes/ilustraciones/ilustracion1.jpg",
+   "title": "",
+   "category": "Arte Digital",
+   "width": 1600,
+   "height": 1092
+  },
+  {
+   "image_url": "imagenes/ilustraciones/ilustracion2.jpg",
+   "title": "",
+   "category": "Arte Digital",
+   "width": 548,
+   "height": 758
+  },
+  {
+   "image_url": "imagenes/ilustraciones/ilustracion3.jpg",
+   "title": "",
+   "category": "Arte Digital",
+   "width": 1600,
+   "height": 1600
+  }
+ ],
+ "featured": [
+  {
+   "image_url": "imagenes/destacados/destacado1.jpg",
+   "title": "Rebranding Corporativo",
+   "category": "",
+   "width": 1140,
+   "height": 1600,
+   "description": "Renovación completa de identidad visual",
+   "tags": [
+    "Branding",
+    "Identidad"
+   ]
+  },
+  {
+   "image_url": "imagenes/destacados/destacado2.jpg",
+   "title": "Campaña Digital",
+   "category": "",
+   "width": 1080,
+   "height": 1080,
+   "description": "Diseño para redes sociales y web",
+   "tags": [
+    "Digital",
+    "Social Media"
+   ]
+  },
+  {
+   "image_url": "imagenes/destacados/destacado3.jpg",
+   "title": "Ilustración Original",
+   "category": "",
+   "width": 1080,
+   "height": 1080,
+   "description": "Arte digital personalizado",
+   "tags": [
+    "Ilustración",
+    "Arte Digital"
+   ]
+  }
+ ],
+ "logos": [
+  {
+   "image_url": "imagenes/logos/logo1.png",
+   "title": "Energi",
+   "category": "",
+   "width": 601,
+   "height": 794,
+   "description": "Identidad Corporativa",
+   "variations": [
+    {
+     "label": "Verde",
+     "image_url": "imagenes/logos/logo1.png"
+    }
+   ]
+  },
+  {
+   "image_url": "imagenes/logos/logo2.png",
+   "title": "North Energy Corp",
+   "category": "",
+   "width": 980,
+   "height": 603,
+   "description": "Logo Corporativo",
+   "variations": [
+    {
+     "label": "Azul",
+     "image_url": "imagenes/logos/logo2.png"
+    },
+    {
+     "label": "Negro",
+     "image_url": "imagenes/Variaciones_logos/logo2_negro.png"
+    },
+    {
+     "label": "Blanco",
+     "image_url": "imagenes/Variaciones_logos/logo2_blanco.png"
+    }
+   ]
+  },
+  {
+   "image_url": "imagenes/logos/logo3.png",
+   "title": "Grin Network",
+   "category": "",
+   "width": 1072,
+   "height": 513,
+   "description": "Tecnología Verde",
+   "variations": [
+    {
+     "label": "Verde",
+     "image_url": "imagenes/logos/logo3.png"
+    }
+   ]
+  }
+ ]
+}
