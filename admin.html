@@ -12,7 +12,7 @@
 <script>
   (function () {
     var t = null; try { t = localStorage.getItem('ag_theme'); } catch (e) {}
-    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', t);
   })();
 </script>
@@ -85,10 +85,16 @@
     <div class="top-actions">
       <span class="who" id="who"></span>
       <a class="icon-btn" href="index.html" target="_blank" rel="noopener" data-tip="Ver el sitio público" aria-label="Ver el sitio público"><svg class="i"><use href="#i-external"/></svg></a>
-      <button class="icon-btn" id="themeBtn" data-tip="Cambiar tema" aria-label="Cambiar tema claro u oscuro"><svg class="i"><use href="#i-moon"/></svg></button>
+      <button class="icon-btn theme-btn" id="themeBtn" data-tip="Cambiar tema" aria-label="Cambiar tema claro u oscuro"><svg class="i i-sun"><use href="#i-sun"/></svg><svg class="i i-moon"><use href="#i-moon"/></svg></button>
       <button class="icon-btn" id="logoutBtn" data-tip="Cerrar sesión" aria-label="Cerrar sesión"><svg class="i"><use href="#i-logout"/></svg></button>
     </div>
   </div></header>
+  <nav class="bnav" role="tablist" aria-label="Secciones del panel">
+    <button class="tab" role="tab" data-view="home"><svg class="i"><use href="#i-home"/></svg>Resumen</button>
+    <button class="tab" role="tab" data-view="works"><svg class="i"><use href="#i-image"/></svg>Piezas</button>
+    <button class="tab" role="tab" data-view="pdf"><svg class="i"><use href="#i-doc"/></svg>Guías</button>
+    <button class="tab" role="tab" data-view="site"><svg class="i"><use href="#i-gear"/></svg>Sitio</button>
+  </nav>
 
   <main>
     <section class="view" id="v-home" hidden></section>
@@ -103,7 +109,7 @@
   <div class="d-body" id="dlgBody"></div>
   <div class="d-foot" id="dlgFoot"></div>
 </dialog>
-<div id="progress" class="progress-card" hidden role="status" aria-live="polite"></div>
+<aside id="tray" class="tray" hidden aria-live="polite" aria-label="Tareas en segundo plano"></aside>
 <div class="toasts" id="toasts" aria-live="polite"></div>
 <input type="file" id="filePick" hidden>
 

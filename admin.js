@@ -49,11 +49,77 @@
   }
   const fail = (e, ctx) => { console.error(ctx || '', e); toast((ctx ? ctx + ': ' : '') + (e?.message || e), true); };
 
-  function progress(text, pct) {
-    const p = $('#progress');
-    if (text == null) { p.hidden = true; return; }
-    p.hidden = false;
-    p.innerHTML = `<div>${esc(text)}</div><div class="bar"><i style="width:${Math.round((pct || 0) * 100)}%"></i></div>`;
+  /* ── Tareas en segundo plano ──────────────────────────────
+     Subidas, importaciones y conversión de PDF corren en una cola:
+     puedes cerrar el diálogo o cambiar de sección y siguen avanzando.
+     (Si cierras la pestaña del panel, se detienen.)                 */
+  const jobs = []; let pumping = false, trayMin = false;
+  const activeJobs = () => jobs.filter(j => j.state === 'queued' || j.state === 'run');
+  function addJob({ title, view, run }) {
+    const j = { id: uid(), title, view, run, state: 'queued', text: 'En cola…', pct: 0 };
+    jobs.push(j); drawTray(); if (view === 'pdf' && S.view === 'pdf') renderPdf(); pump(); return j;
+  }
+  const dismissJob = id => { const k = jobs.findIndex(j => j.id === id); if (k >= 0) jobs.splice(k, 1); drawTray(); };
+  async function pump() {
+    if (pumping) return; pumping = true;
+    for (let j; (j = jobs.find(x => x.state === 'queued'));) {
+      j.state = 'run'; j.text = 'Empezando…'; drawTray();
+      try { await j.run((t, p) => { j.text = t; j.pct = p ?? j.pct; tick(j); }); j.state = 'done'; j.text = 'Listo'; j.pct = 1; setTimeout(() => dismissJob(j.id), 7000); }
+      catch (e) { j.state = 'err'; j.error = e?.message || String(e); j.text = 'No se pudo completar'; console.error(e); }
+      drawTray();
+      if (j.state === 'err') toast(`${j.title}: ${j.error}`, true);
+      if (S.view === j.view && !dlg.open) VIEWS[j.view]();
+    }
+    pumping = false;
+  }
+  function tick(j) {
+    $$(`[data-job="${j.id}"] .bar i`).forEach(b => b.style.width = Math.round(j.pct * 100) + '%');
+    $$(`[data-job="${j.id}"] .x`).forEach(x => x.textContent = j.text);
+  }
+  function drawTray() {
+    const t = $('#tray'); if (!jobs.length) { t.hidden = true; return; }
+    const act = activeJobs().length;
+    t.hidden = false; t.classList.toggle('min', trayMin);
+    t.innerHTML = `<button class="tray-h" data-tray="min" aria-expanded="${!trayMin}">${act ? '<span class="spin"></span>' : ic('check')}${act ? 'Trabajando en segundo plano' : 'Todo listo'}<span class="n">${act ? act + (act === 1 ? ' tarea' : ' tareas') : ''}</span>${ic(trayMin ? 'up' : 'down')}</button>
+      <div class="tray-b">${jobs.map(j => `<div class="job ${j.state}" data-job="${j.id}"><div class="t"><b>${esc(j.title)}</b><span>${j.state === 'queued' ? 'En cola' : j.state === 'run' ? Math.round(j.pct * 100) + '%' : j.state === 'done' ? 'Listo' : 'Error'}</span></div>
+        <div class="bar"><i style="width:${Math.round(j.pct * 100)}%"></i></div><div class="x">${esc(j.state === 'err' ? j.error : j.text)}</div>
+        ${j.state === 'err' ? `<button class="dismiss" data-dismiss="${j.id}">Descartar</button>` : ''}</div>`).join('')}</div>`;
+  }
+  $('#tray').addEventListener('click', e => {
+    if (e.target.closest('[data-tray]')) { trayMin = !trayMin; drawTray(); }
+    const d = e.target.closest('[data-dismiss]'); if (d) dismissJob(d.dataset.dismiss);
+  });
+  window.addEventListener('beforeunload', e => { if (activeJobs().length) { e.preventDefault(); e.returnValue = ''; } });
+
+  /* ── Selector propio (igual que el del portafolio) ── */
+  function enhance(scope = document) {
+    $$('select:not([data-enhanced])', scope).forEach(sel => {
+      sel.dataset.enhanced = '1';
+      const wrap = document.createElement('div'); wrap.className = 'sel';
+      sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
+      sel.classList.add('sel-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'sel-btn'; btn.setAttribute('aria-haspopup', 'listbox'); btn.setAttribute('aria-expanded', 'false');
+      const list = document.createElement('ul'); list.className = 'sel-list'; list.setAttribute('role', 'listbox'); list.hidden = true;
+      wrap.append(btn, list);
+      let active = -1;
+      list.innerHTML = [...sel.options].map((o, i) => `<li role="option" data-i="${i}"${o.value === '' ? ' class="ph"' : ''}>${esc(o.textContent)}</li>`).join('');
+      const items = $$('li', list);
+      const sync = () => { const o = sel.options[sel.selectedIndex]; btn.innerHTML = `<span class="${sel.value === '' ? 'ph' : ''}">${esc(o ? o.textContent : '')}</span>${ic('down')}`; items.forEach((li, i) => li.setAttribute('aria-selected', i === sel.selectedIndex)); };
+      const mark = i => { active = Math.min(items.length - 1, Math.max(0, i)); items.forEach((li, k) => li.classList.toggle('on', k === active)); const li = items[active]; if (li) { if (li.offsetTop < list.scrollTop) list.scrollTop = li.offsetTop - 6; else if (li.offsetTop + li.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = li.offsetTop + li.offsetHeight - list.clientHeight + 6; } };
+      const open = () => { const r = btn.getBoundingClientRect(); wrap.classList.toggle('up', r.bottom + 280 > innerHeight && r.top > 300); list.hidden = false; btn.setAttribute('aria-expanded', 'true'); wrap.classList.add('open'); mark(Math.max(0, sel.selectedIndex)); };
+      const close = () => { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); wrap.classList.remove('open'); };
+      const pick = i => { sel.selectedIndex = i; sel.dispatchEvent(new Event('change', { bubbles: true })); sync(); close(); btn.focus(); };
+      btn.addEventListener('click', () => list.hidden ? open() : close());
+      list.addEventListener('click', e => { const li = e.target.closest('li'); if (li) pick(+li.dataset.i); });
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { if (!list.hidden) { e.preventDefault(); e.stopPropagation(); close(); } return; }
+        if (['ArrowDown', 'ArrowUp', 'Enter', ' ', 'Home', 'End'].includes(e.key)) e.preventDefault(); else return;
+        if (list.hidden) return open();
+        if (e.key === 'ArrowDown') mark(active + 1); else if (e.key === 'ArrowUp') mark(active - 1); else if (e.key === 'Home') mark(0); else if (e.key === 'End') mark(items.length - 1); else pick(active);
+      });
+      document.addEventListener('pointerdown', e => { if (!wrap.contains(e.target)) close(); });
+      sync();
+    });
   }
 
   /* ── Diálogo único ───────────────────────────────────────── */
@@ -67,6 +133,7 @@
     $('#dlgFoot').hidden = !foot;
     dlg.style.width = wide ? 'min(820px,94vw)' : '';
     if (!dlg.open) dlg.showModal();
+    enhance(dlg);
     return new Promise(res => { dlgDone = res; });
   }
   function closeDlg(v) { if (dlg.open) dlg.close(); const d = dlgDone; dlgDone = null; d && d(v); }
@@ -115,9 +182,19 @@
   const extOf = b => (b.type === 'image/png' ? 'png' : b.type === 'image/jpeg' ? 'jpg' : 'webp');
 
   async function upload(path, blob) {
-    const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: false });
-    if (error) throw new Error('Subida: ' + error.message);
-    return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    let last;
+    for (let t = 0; t < 3; t++) {                       // reintenta si la red falla un instante
+      const { error } = await sb.storage.from(BUCKET).upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: true });
+      if (!error) return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      last = error; await sleep(500 * (t + 1));
+    }
+    throw new Error('No se pudo subir el archivo (' + (last?.message || 'error de red') + ')');
+  }
+  async function removeFolder(folder) {                // limpia lo que quedó de un intento fallido
+    try {
+      const { data } = await sb.storage.from(BUCKET).list(folder, { limit: 1000 });
+      if (data?.length) await sb.storage.from(BUCKET).remove(data.map(f => `${folder}/${f.name}`));
+    } catch { /* mejor esfuerzo */ }
   }
   const pathOf = url => {
     const m = String(url || '').match(new RegExp(`/object/public/${BUCKET}/(.+?)(?:\\?.*)?$`));
@@ -189,37 +266,40 @@
   }
   const localPending = () => KINDS.reduce((n, k) => n + localItems(k.id).length, 0);
 
-  async function importLocal(items, kind, quiet) {
-    const total = items.length; let n = 0, bad = 0;
-    for (const it of items) {
-      try {
-        progress(`Importando ${n + 1} de ${total}: ${it.title || it.image_url.split('/').pop()}`, n / total);
-        const blob = await (await fetch(it.image_url)).blob();
-        const img = await uploadProcessed(blob, `works/${kind}`, kind === 'logo' ? { q: 0.92 } : {});
-        const row = {
-          kind, title: it.title || '', description: it.description || null, category: it.category || null,
-          image_url: img.image_url, thumb_url: img.thumb_url, width: img.width, height: img.height,
-          sort_order: nextOrder(kind), visible: !localState().hidden.includes(it.image_url),
-        };
-        if (S.tagsOk && it.tags?.length) row.tags = it.tags;
-        const work = ok(await sb.from('works').insert(row).select().single());
-        S.works.push(work);
-        if (kind === 'logo') {
-          const vars = (it.variations || []).filter(v => v.image_url !== it.image_url);
-          for (let i = 0; i < vars.length; i++) {
-            const vb = await (await fetch(vars[i].image_url)).blob();
-            const vi = await uploadProcessed(vb, 'works/logo', { q: 0.92, noThumb: true });
-            S.assets.push(ok(await sb.from('work_assets').insert({ work_id: work.id, label: vars[i].label || '', image_url: vi.image_url, sort_order: i }).select().single()));
-          }
-        }
-        const st = localState(); st.imported.push(it.image_url);
-        await saveSetting('local_state', st);
-        n++;
-      } catch (e) { bad++; console.error(e); toast(`No se pudo importar ${it.image_url.split('/').pop()}: ${e.message}`, true); }
+  async function importOne(kind, it) {
+    const blob = await (await fetch(it.image_url)).blob();
+    const img = await uploadProcessed(blob, `works/${kind}`, kind === 'logo' ? { q: 0.92 } : {});
+    const row = {
+      kind, title: it.title || '', description: it.description || null, category: it.category || null,
+      image_url: img.image_url, thumb_url: img.thumb_url, width: img.width, height: img.height,
+      sort_order: nextOrder(kind), visible: !localState().hidden.includes(it.image_url),
+    };
+    if (S.tagsOk && it.tags?.length) row.tags = it.tags;
+    const work = ok(await sb.from('works').insert(row).select().single());
+    S.works.push(work);
+    if (kind === 'logo') {
+      const vars = (it.variations || []).filter(v => v.image_url !== it.image_url);
+      for (let i = 0; i < vars.length; i++) {
+        const vb = await (await fetch(vars[i].image_url)).blob();
+        const vi = await uploadProcessed(vb, 'works/logo', { q: 0.92, noThumb: true });
+        S.assets.push(ok(await sb.from('work_assets').insert({ work_id: work.id, label: vars[i].label || '', image_url: vi.image_url, sort_order: i }).select().single()));
+      }
     }
-    progress(null);
-    if (!quiet) toast(`${n} importada${n === 1 ? '' : 's'}${bad ? `, ${bad} con error` : ''}.`, !!bad && !n);
-    return { n, bad };
+    const st = localState(); st.imported.push(it.image_url);
+    await saveSetting('local_state', st);
+  }
+  /* Importa en segundo plano (varias piezas, de uno o más tipos) */
+  function importJob(pairs) {
+    const total = pairs.length;
+    addJob({ title: total === 1 ? 'Importando una pieza' : `Importando ${total} piezas de la carpeta`, view: 'works', run: async up => {
+      let n = 0, bad = 0;
+      for (const [kind, it] of pairs) {
+        up(`Pieza ${n + bad + 1} de ${total}: ${it.title || it.image_url.split('/').pop()}`, (n + bad) / total);
+        try { await importOne(kind, it); n++; } catch (e) { bad++; console.error(e); }
+      }
+      toast(`${n} pieza${n === 1 ? '' : 's'} importada${n === 1 ? '' : 's'}${bad ? `, ${bad} con error` : ''}.`, !n && !!bad);
+      if (bad && !n) throw new Error('No se pudo importar ninguna pieza');
+    } });
   }
 
   const worksOf = kind => S.works.filter(w => w.kind === kind);
@@ -227,16 +307,19 @@
 
   /* ── Navegación ──────────────────────────────────────────── */
   const VIEWS = { home: renderHome, works: renderWorks, pdf: renderPdf, site: renderSite };
+  const TINTS = { home: 'a', works: 'b', pdf: 'c', site: 'd' };
+  const saveState = () => store.set('ag_admin', JSON.stringify({ view: S.view, kind: S.kind, siteTab }));
   function go(view) {
     S.view = view;
     $$('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.view === view));
     $$('.view').forEach(v => v.hidden = v.id !== 'v-' + view);
-    VIEWS[view]();
-    store.set('ag_admin_view', view);
+    document.body.dataset.tint = TINTS[view];
+    VIEWS[view](); enhance($('#v-' + view));
+    saveState();
   }
   $$('.tab').forEach(t => t.onclick = () => { go(t.dataset.view); scrollTo({ top: 0 }); });
 
-  async function run(fn, errCtx) { try { return await fn(); } catch (e) { fail(e, errCtx); progress(null); } }
+  async function run(fn, errCtx) { try { return await fn(); } catch (e) { fail(e, errCtx); } }
 
   /* ══ RESUMEN ═════════════════════════════════════════════════ */
   function renderHome() {
@@ -273,15 +356,13 @@
     const chips = KINDS.map(x => `<button class="chip" data-kind="${x.id}" aria-pressed="${x.id === S.kind}">${x.label} <b>${worksOf(x.id).length + localItems(x.id).length}</b></button>`).join('');
     el.innerHTML = `
       <header><div><h2>Piezas</h2><p>${esc(k.hint)}</p></div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          ${pendAll ? `<button class="btn" data-act="import-all" data-tip="Sube a la base de datos todo lo que está solo en la carpeta">${ic('import')}Importar de la carpeta (${pendAll})</button>` : ''}
-          <button class="btn primary" data-act="pick">${ic('upload')}Subir imágenes</button>
-        </div></header>
+        <button class="btn primary" data-act="pick">${ic('upload')}Subir imágenes</button></header>
+      ${pendAll ? `<div class="banner"><span class="ico">${ic('import')}</span><div><strong>Tienes ${pendAll} pieza${pendAll === 1 ? '' : 's'} solo en la carpeta del sitio</strong><span>Impórtalas a la base de datos para poder editarlas, reordenarlas u ocultarlas desde aquí.</span></div>
+        <button class="btn primary" data-act="import-all">${ic('import')}Importar todo</button></div>` : ''}
       <div class="chips" role="group" aria-label="Tipo de pieza">${chips}</div>
-      <div class="drop" id="drop"><strong>Arrastra imágenes aquí</strong><small>JPG, PNG o WebP · hasta 25 MB cada una · se optimizan solas antes de subirse</small></div>
-      <div class="queue" id="queue"></div>
-      ${S.kind === 'featured' ? `<div class="msg info">Destacados se muestra de a tres. El sitio centra solo la imagen más angosta; si prefieres respetar tu orden exacto, desactívalo en <b>Sitio → Textos</b>.</div>` : ''}
-      ${S.kind === 'featured' && !S.tagsOk ? `<div class="msg warn">Para usar etiquetas en Destacados ejecuta <b>supabase/03_etiquetas.sql</b> en Supabase (una sola vez).</div>` : ''}
+      <div class="drop" id="drop"><strong>Arrastra imágenes aquí</strong> <span style="color:var(--text-2)">o toca para elegirlas</span><small>JPG, PNG o WebP · hasta 25 MB cada una · se optimizan solas</small></div>
+      ${S.kind === 'featured' ? `<div class="msg info"><span>Destacados se muestra de a tres. El sitio centra solo la imagen más angosta; si prefieres respetar tu orden exacto, desactívalo en <b>Sitio → Textos</b>.</span></div>` : ''}
+      ${S.kind === 'featured' && !S.tagsOk ? `<div class="msg warn"><span>Para usar etiquetas en Destacados ejecuta <b>supabase/03_etiquetas.sql</b> en Supabase (una sola vez).</span></div>` : ''}
       ${db.length || loc.length ? `<div class="grid" id="grid">${db.map((w, i) => workCard(w, i, db.length)).join('')}${loc.map(localCard).join('')}</div>`
         : `<div class="empty-state"><span class="ico">${ic('image')}</span><strong>Aún no hay ${k.label.toLowerCase()}</strong><span>Sube tu primera imagen con el botón de arriba o arrastrándola aquí.</span></div>`}`;
     wireWorks(el);
@@ -291,7 +372,7 @@
       <div class="pic"><img src="${esc(w.thumb_url || w.image_url)}" alt="" loading="lazy" decoding="async">
         <div class="badges">${w.visible ? '' : '<span class="badge off">Oculta</span>'}${S.assets.some(a => a.work_id === w.id) ? `<span class="badge">${S.assets.filter(a => a.work_id === w.id).length} variaciones</span>` : ''}</div>
         <span class="handle" aria-hidden="true">${ic('drag')}</span></div>
-      <div class="body"><h4 class="${w.title ? '' : 'empty'}">${esc(w.title || 'Sin título')}</h4><p>${esc(w.category || w.description || '—')}</p></div>
+      <div class="body"><h4 class="${w.title ? '' : 'empty'}">${esc(w.title || 'Sin título')}</h4><p>${esc(w.category || w.description || '—')}</p>${w.tags?.length ? `<div class="tags">${w.tags.slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div>
       <div class="acts">
         <button class="icon-btn" data-act="left" data-tip="Mover antes" aria-label="Mover antes" ${i === 0 ? 'disabled' : ''}>${ic('left')}</button>
         <button class="icon-btn" data-act="right" data-tip="Mover después" aria-label="Mover después" ${i === n - 1 ? 'disabled' : ''}>${ic('right')}</button>
@@ -312,19 +393,16 @@
 
   function wireWorks(el) {
     el.onclick = e => run(async () => {
-      const chip = e.target.closest('.chip[data-kind]'); if (chip) { S.kind = chip.dataset.kind; return renderWorks(); }
+      const chip = e.target.closest('.chip[data-kind]'); if (chip) { S.kind = chip.dataset.kind; saveState(); return renderWorks(); }
       const b = e.target.closest('[data-act]'); if (!b) return;
       const card = b.closest('.work'), id = card?.dataset.id, w = id && S.works.find(x => x.id === id);
       switch (b.dataset.act) {
         case 'pick': return pickFiles(files => uploadWorks(files));
         case 'import-all': {
-          if (!await ask('Importar de la carpeta', `Se subirán ${localPending()} piezas a la base de datos (optimizadas). Después podrás editarlas, reordenarlas o eliminarlas desde aquí.`, 'Importar')) return;
-          let n = 0, bad = 0;
-          for (const k of KINDS) { const l = localItems(k.id); if (l.length) { const r = await importLocal(l, k.id, true); n += r.n; bad += r.bad; } }
-          toast(`${n} pieza${n === 1 ? '' : 's'} importada${n === 1 ? '' : 's'}${bad ? `, ${bad} con error` : ''}.`, !!bad && !n);
-          return renderWorks();
+          if (!await ask('Importar de la carpeta', `Se subirán ${localPending()} piezas a la base de datos (optimizadas). Seguirá en segundo plano: puedes cambiar de sección mientras tanto.`, 'Importar')) return;
+          return importJob(KINDS.flatMap(k => localItems(k.id).map(it => [k.id, it])));
         }
-        case 'imp': { const it = localItems(S.kind).find(x => x.image_url === card.dataset.local); await importLocal([it], S.kind); return renderWorks(); }
+        case 'imp': { const it = localItems(S.kind).find(x => x.image_url === card.dataset.local); return importJob([[S.kind, it]]); }
         case 'lvis': {
           const st = localState(), p = card.dataset.local, i = st.hidden.indexOf(p);
           i < 0 ? st.hidden.push(p) : st.hidden.splice(i, 1);
@@ -383,22 +461,22 @@
     f.click();
   }
 
-  async function uploadWorks(files) {
-    const kind = S.kind, q = $('#queue');
-    const rows = files.map(f => { const d = document.createElement('div'); d.className = 'q'; d.innerHTML = `<div class="t"><span>${esc(f.name)}</span><span>En espera</span></div>`; q && q.appendChild(d); return d; });
-    const setS = (i, t, cls) => { const d = rows[i]; d.className = 'q ' + (cls || ''); d.querySelector('.t span:last-child').textContent = t; };
-    let n = 0;
-    for (let i = 0; i < files.length; i++) {
-      try {
-        setS(i, 'Optimizando y subiendo…');
-        const img = await uploadProcessed(files[i], `works/${kind}`, kind === 'logo' ? { q: 0.92 } : {});
-        const title = files[i].name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
-        const row = { kind, title: kind === 'featured' || kind === 'logo' ? title : '', category: DEFAULT_CAT[kind] || null, ...img, sort_order: nextOrder(kind), visible: true };
-        S.works.push(ok(await sb.from('works').insert(row).select().single()));
-        setS(i, 'Listo', 'done'); n++;
-      } catch (e) { setS(i, e.message, 'err'); }
-    }
-    if (n) { toast(`${n} imagen${n === 1 ? '' : 'es'} subida${n === 1 ? '' : 's'}. Ya está${n === 1 ? '' : 'n'} en el sitio.`); await sleep(900); if (S.view === 'works' && S.kind === kind) renderWorks(); }
+  function uploadWorks(files) {
+    const kind = S.kind, total = files.length;
+    addJob({ title: `Subiendo ${total} imagen${total === 1 ? '' : 'es'} a ${KIND[kind].label}`, view: 'works', run: async up => {
+      let n = 0; const errs = [];
+      for (let i = 0; i < total; i++) {
+        up(`Imagen ${i + 1} de ${total}: ${files[i].name}`, i / total);
+        try {
+          const img = await uploadProcessed(files[i], `works/${kind}`, kind === 'logo' ? { q: 0.92 } : {});
+          const title = files[i].name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+          const row = { kind, title: kind === 'featured' || kind === 'logo' ? title : '', category: DEFAULT_CAT[kind] || null, ...img, sort_order: nextOrder(kind), visible: true };
+          S.works.push(ok(await sb.from('works').insert(row).select().single())); n++;
+        } catch (e) { errs.push(`${files[i].name}: ${e.message}`); }
+      }
+      if (n) toast(`${n} imagen${n === 1 ? '' : 'es'} subida${n === 1 ? '' : 's'}. Ya está${n === 1 ? '' : 'n'} en el sitio.`);
+      if (errs.length) throw new Error(errs.join(' · '));
+    } });
   }
 
   /* ── Editar pieza ── */
@@ -429,7 +507,7 @@
       F.title = g('#eTitle').value; F.category = g('#eCat').value; F.description = g('#eDesc').value; F.kind = g('#eKind').value; F.visible = g('#eVis').checked;
       $$('[data-vl]', body).forEach(i => vars[+i.dataset.vl].label = i.value);
     };
-    const redraw = () => { keep(); draw(); };
+    const redraw = () => { keep(); draw(); enhance(body); };
     draw();
     const foot = document.createElement('div');
     foot.innerHTML = `<button class="btn danger" data-a="del">${ic('trash')}Eliminar</button><div class="r"><button class="btn" data-a="cancel">Cancelar</button><button class="btn primary" data-a="save">Guardar cambios</button></div>`;
@@ -488,6 +566,7 @@
       <header><div><h2>Guías PDF</h2><p>Sube un PDF y el panel lo convierte en páginas ligeras para que se vea rápido en el sitio. Nada de PDFs pesados.</p></div>
         <button class="btn primary" data-act="new">${ic('upload')}Subir PDF</button></header>
       <div class="drop" id="drop"><strong>Arrastra un PDF aquí</strong><small>Hasta 80 MB y ${LIMITS.pdfPages} páginas · se convierte en tu navegador</small></div>
+      ${(() => { const run = jobs.filter(j => j.view === 'pdf' && (j.state === 'run' || j.state === 'queued')); return run.map(j => `<article class="doc job" data-job="${j.id}" style="margin-bottom:1rem"><span class="ico"><span class="spin"></span></span><div><h4>${esc(j.title)}</h4><div class="bar"><i style="width:${Math.round(j.pct * 100)}%"></i></div><p class="x">${esc(j.text)}</p></div></article>`).join(''); })()}
       ${S.docs.length ? `<div class="stack">${S.docs.map((d, i) => `
         <article class="doc ${d.visible ? '' : 'off'}" data-id="${d.id}">
           <div class="cov">${d.cover_url ? `<img src="${esc(d.cover_url)}" alt="" loading="lazy">` : ''}</div>
@@ -499,7 +578,7 @@
             <button class="icon-btn" data-act="edit" data-tip="Editar datos" aria-label="Editar">${ic('edit')}</button>
             <button class="icon-btn danger" data-act="del" data-tip="Eliminar" aria-label="Eliminar">${ic('trash')}</button>
           </div></article>`).join('')}</div>`
-        : `<div class="empty-state"><span class="ico">${ic('doc')}</span><strong>Todavía no hay guías</strong><span>La sección Guías del sitio se mantiene oculta hasta que subas la primera.</span></div>`}`;
+        : jobs.some(j => j.view === 'pdf' && (j.state === 'run' || j.state === 'queued')) ? '' : `<div class="empty-state"><span class="ico">${ic('doc')}</span><strong>Todavía no hay guías</strong><span>La sección Guías del sitio se mantiene oculta hasta que subas la primera.</span></div>`}`;
     const pick = () => pickFiles(f => newDoc(f[0]), 'application/pdf', false);
     const drop = $('#drop');
     ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
@@ -544,38 +623,33 @@
     if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) return toast('Elige un archivo PDF', true);
     if (file.size > LIMITS.pdf) return toast('El PDF pesa más de 80 MB', true);
     const body = document.createElement('div');
-    body.innerHTML = `<p class="msg info">${esc(file.name)} · ${(file.size / 1048576).toFixed(1)} MB</p>
+    body.innerHTML = `<p class="msg info"><span>${ic('doc')}</span><span><b>${esc(file.name)}</b><br>${(file.size / 1048576).toFixed(1)} MB · se convertirá en páginas ligeras y seguirá en segundo plano.</span></p>
       <div class="field"><label for="pTitle">Título</label><input type="text" id="pTitle" maxlength="90" value="${esc(file.name.replace(/\.pdf$/i, '').replace(/[-_]+/g, ' '))}"></div>
       <div class="row2"><div class="field"><label for="pClient">Cliente o marca</label><input type="text" id="pClient" maxlength="70"></div>
         <div class="field"><label for="pYear">Año</label><input type="number" id="pYear" min="1990" max="2100" value="${new Date().getFullYear()}"></div></div>
-      <div class="field"><label for="pDesc">Descripción</label><textarea id="pDesc" maxlength="300"></textarea></div>
-      <div id="pProg" hidden><div class="bar"><i></i></div><p class="hint" style="margin-top:.5rem;font-size:.85rem;color:var(--text-2)"></p></div>`;
+      <div class="field"><label for="pDesc">Descripción</label><textarea id="pDesc" maxlength="300"></textarea></div>`;
     const foot = document.createElement('div'); foot.innerHTML = `<span></span><div class="r"><button class="btn" data-a="cancel">Cancelar</button><button class="btn primary" data-a="go">Convertir y publicar</button></div>`;
-    let working = false;
-    foot.onclick = e => run(async () => {
-      const a = e.target.closest('[data-a]')?.dataset.a; if (a === 'cancel' && !working) return closeDlg(null);
-      if (a !== 'go' || working) return;
+    foot.onclick = e => {
+      const a = e.target.closest('[data-a]')?.dataset.a; if (a === 'cancel') return closeDlg(null);
+      if (a !== 'go') return;
       const title = $('#pTitle', body).value.trim(); if (!title) return toast('Escribe un título', true);
-      working = true; $$('button,input,textarea', dlg).forEach(x => x.disabled = true); $('#pProg', body).hidden = false;
-      const bar = $('#pProg .bar i', body), txt = $('#pProg p', body);
-      try {
-        await convertPdf(file, { title, client: $('#pClient', body).value.trim() || null, year: +$('#pYear', body).value || null, description: $('#pDesc', body).value.trim() || null },
-          (t, p) => { txt.textContent = t; bar.style.width = Math.round(p * 100) + '%'; });
-        closeDlg(true); toast('Guía publicada'); renderPdf();
-      } catch (err) { working = false; $$('button,input,textarea', dlg).forEach(x => x.disabled = false); $('#pProg', body).hidden = true; throw err; }
-    }, 'No se pudo convertir el PDF');
+      const meta = { title, client: $('#pClient', body).value.trim() || null, year: +$('#pYear', body).value || null, description: $('#pDesc', body).value.trim() || null };
+      closeDlg(true);
+      addJob({ title: `Guía «${title}»`, view: 'pdf', run: async up => { await convertPdf(file, meta, up); toast('Guía publicada. Ya se ve en el sitio.'); } });
+    };
     openDlg({ title: 'Nueva guía', body, foot });
   }
 
   async function convertPdf(file, meta, onP) {
     onP('Preparando el lector de PDF…', 0.02);
+    if (!S.docs) S.docs = [];
     const lib = await loadPdfJs();
     const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
     const total = pdf.numPages;
     if (total > LIMITS.pdfPages) throw new Error(`El PDF tiene ${total} páginas (máximo ${LIMITS.pdfPages})`);
-    const slugBase = slugify(meta.title); let slug = slugBase;
+    let slug = slugify(meta.title);
     if (S.docs.some(d => d.slug === slug)) slug += '-' + uid().slice(0, 4);
-    const folder = `pdf/${slug}`;
+    const folder = `pdf/${slug}-${uid().slice(0, 6)}`;      // carpeta nueva en cada intento: nunca choca con restos de otro
     const doc = ok(await sb.from('pdf_documents').insert({ slug, ...meta, page_count: 0, visible: false, sort_order: S.docs.length + 1 }).select().single());
     const urls = [];
     try {
@@ -603,7 +677,7 @@
       const upd = ok(await sb.from('pdf_documents').update({ page_count: total, cover_url: cover, orientation: orient, visible: true }).eq('id', doc.id).select().single());
       S.docs.push(upd);
     } catch (e) {
-      await sb.from('pdf_documents').delete().eq('id', doc.id); await removeFiles(urls); throw e;
+      await sb.from('pdf_documents').delete().eq('id', doc.id); await removeFiles(urls); await removeFolder(folder); throw e;
     }
   }
 
@@ -631,8 +705,9 @@
     el.innerHTML = `<header><div><h2>Sitio</h2><p>Los textos, colores y secciones de tu portafolio.</p></div></header>
       <div class="chips" role="group" aria-label="Ajustes">${SITE_TABS.map(([id, l]) => `<button class="chip" data-st="${id}" aria-pressed="${id === siteTab}">${l}</button>`).join('')}</div>
       <div id="siteBody"></div>`;
-    el.onclick = e => { const c = e.target.closest('[data-st]'); if (c) { siteTab = c.dataset.st; renderSite(); } };
+    el.onclick = e => { const c = e.target.closest('[data-st]'); if (c) { siteTab = c.dataset.st; saveState(); renderSite(); } };
     ({ texts: siteTexts, contact: siteContact, sections: siteSections, look: siteLook, account: siteAccount })[siteTab]($('#siteBody'));
+    enhance(el);
   }
   const saveBar = (id = 'saveBtn', label = 'Guardar cambios') => `<div class="savebar"><button class="btn primary" id="${id}">${label}</button></div>`;
   const withSave = (btn, fn) => btn.onclick = () => run(async () => {
@@ -684,7 +759,7 @@
         await saveSetting('featured', { ...S.settings.featured, auto_center: $('#fAuto').checked });
       });
     };
-    const draw = () => { drawHtml(); bindSave(); };
+    const draw = () => { drawHtml(); bindSave(); enhance(el); };
     draw();
     el.addEventListener('click', e => {
       const a = e.target.closest('#addArea, #addTool, [data-del], [data-delt]'); if (!a) return; collect();
@@ -808,11 +883,23 @@
     $('#lPass').value = ''; await enter();
   });
   $('#logoutBtn').onclick = async () => { await sb.auth.signOut(); S.user = null; show('loginView'); };
-  $('#themeBtn').onclick = () => {
-    const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = n; store.set('ag_theme', n); syncThemeIcon();
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function setTheme(t, x, y) {
+    const root = document.documentElement;
+    const apply = () => { root.setAttribute('data-theme', t); store.set('ag_theme', t); };
+    if (reduceMotion) return apply();
+    if (document.startViewTransition && CSS.supports?.('mask-image', 'radial-gradient(circle at 10px 10px,#000,transparent)')) {
+      const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 160;
+      root.style.setProperty('--vx', `${x}px`); root.style.setProperty('--vy', `${y}px`);
+      const vt = document.startViewTransition(apply);
+      vt.ready.then(() => root.animate({ '--vr': ['0px', `${r}px`] }, { duration: 1150, easing: 'cubic-bezier(.45,.05,.25,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
+      vt.finished.catch(() => {});
+    } else { root.classList.add('theme-fade'); apply(); setTimeout(() => root.classList.remove('theme-fade'), 800); }
+  }
+  $('#themeBtn').onclick = e => {
+    const b = e.currentTarget.getBoundingClientRect();
+    setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', b.left + b.width / 2, b.top + b.height / 2);
   };
-  const syncThemeIcon = () => $('#themeBtn use').setAttribute('href', document.documentElement.dataset.theme === 'dark' ? '#i-sun' : '#i-moon');
 
   async function enter() {
     const { data: { session } } = await sb.auth.getSession();
@@ -824,14 +911,15 @@
       return loginMsg('Esta cuenta no tiene permisos de administración. Falta agregarla a la tabla «admins» (ver 01_schema.sql).');
     }
     $('#who').textContent = S.user.email;
-    show('app'); progress('Cargando tu contenido…', 0.3);
-    try { await loadAll(); } catch (e) { progress(null); return fail(e, 'No se pudo cargar'); }
-    progress(null);
-    go(VIEWS[store.get('ag_admin_view')] ? store.get('ag_admin_view') : 'home');
+    show('app');
+    const first = $('#v-home'); first.hidden = false; first.innerHTML = '<div class="empty-state"><span class="spin"></span><span>Cargando tu contenido…</span></div>';
+    try { await loadAll(); } catch (e) { return fail(e, 'No se pudo cargar'); }
+    let saved = {}; try { saved = JSON.parse(store.get('ag_admin') || '{}'); } catch { /* sin estado previo */ }
+    if (KIND[saved.kind]) S.kind = saved.kind;
+    if (SITE_TABS.some(t => t[0] === saved.siteTab)) siteTab = saved.siteTab;
+    go(VIEWS[saved.view] ? saved.view : 'home');
   }
 
-  window.addEventListener('beforeunload', e => { if (S.busy) e.preventDefault(); });
-  syncThemeIcon();
   (async function boot() {
     if (!HAS_SB) return show('setupView');
     sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON, { auth: { persistSession: true, autoRefreshToken: true } });
