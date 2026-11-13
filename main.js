@@ -465,7 +465,7 @@
     const l = curLogo; if (!l) return;
     const cards = l.cards;
     GROUPS.vars = cards.map(v => ({ src: v.src, title: `${l.title}, ${v.label}`, alt: `${l.title}, ${v.label}`, bg: modeOf(v) }));
-    $('#variations').className = `variations bg-${bgMode}`;
+    $('#variations').className = `variations bg-${bgMode}${cards.length === 1 ? ' one' : ''}`;
     $('#variations').innerHTML = cards.map((v, n) => `
       <figure class="v-card m-${modeOf(v)}">
         <button class="v-img" data-v="vars" data-i="${n}" aria-label="Ampliar ${esc(v.label)}"><img src="${esc(v.src)}" alt="${esc(l.title)}, ${esc(v.label)}" loading="lazy" decoding="async"></button>
@@ -602,8 +602,8 @@
     const fmt = wa.startsWith('51') && wa.length === 11 ? `+51 ${wa.slice(2, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
     $('#cWhats').href = `https://wa.me/${wa}`; $('#cWhats').textContent = fmt;
     $('#cWhatsBtn').href = `https://wa.me/${wa}?text=${encodeURIComponent('Hola Ana Lucía, me interesa trabajar contigo')}`;
-    $('#fWa').href = `https://wa.me/${wa}`; $('#fWaT').href = `https://wa.me/${wa}`; $('#fWaT').textContent = fmt;
-    if (contact.email) { $('#fMail').href = `mailto:${contact.email}`; $('#fMailT').href = `mailto:${contact.email}`; $('#fMailT').textContent = contact.email; }
+    $('#fWa').href = `https://wa.me/${wa}`; $('#fWaT').href = `https://wa.me/${wa}`; $('#fWaT span').textContent = fmt;
+    if (contact.email) { $('#fMail').href = `mailto:${contact.email}`; $('#fMailT').href = `mailto:${contact.email}`; $('#fMailT span').textContent = contact.email; }
     if (contact.email) { $('#cEmail').href = `mailto:${contact.email}`; $('#cEmail').textContent = contact.email; }
     if (contact.instagram) {
       const u = String(contact.instagram).replace(/^@/, '').replace(/[^\w.]/g, '');
