@@ -56,8 +56,11 @@
     ]);
 
     const kindMap = { mockup: 'mockups', design: 'designs', illustration: 'illustrations', featured: 'featured', logo: 'logos' };
+    const cfg = Object.fromEntries(settings.map(s => [s.key, s.value]));
+    // Lo importado o escondido desde el panel deja de salir de la carpeta local
+    const ls = cfg.local_state || {}, gone = new Set([...(ls.imported || []), ...(ls.hidden || [])]);
     const data = {};
-    for (const k of Object.keys(empty)) data[k] = (local[k] || []).map(norm);
+    for (const k of Object.keys(empty)) data[k] = (local[k] || []).filter(x => !gone.has(x.image_url)).map(norm);
     for (const w of works) {
       const k = kindMap[w.kind]; if (!k || !w.image_url) continue;
       const it = norm(w);
@@ -67,7 +70,6 @@
       }
       data[k].push(it);
     }
-    const cfg = Object.fromEntries(settings.map(s => [s.key, s.value]));
     return { data, docs: docs.filter(d => d.page_count > 0 || d.source_url), settings: cfg };
   }
 
@@ -89,7 +91,7 @@
     if (dark) css += `[data-theme="dark"]{${dark}}`;
     for (const [id, o] of Object.entries(theme.sections || {})) {
       if (!/^[\w-]+$/.test(id)) continue;
-      const rule = (okColor(o.bg) ? `--sec-bg:${okColor(o.bg)};` : '') + (okColor(o.text) ? `--sec-text:${okColor(o.text)};` : '') + (okColor(o.accent) ? `--accent:${okColor(o.accent)};` : '');
+      const rule = (okColor(o.bg) ? `background:${okColor(o.bg)};` : '') + (okColor(o.text) ? `color:${okColor(o.text)};--text:${okColor(o.text)};` : '') + (okColor(o.accent) ? `--accent:${okColor(o.accent)};` : '');
       if (rule) css += `[data-theme-section="${id}"]{${rule}}`;
     }
     let el = $('#themeVars'); if (!el) { el = document.createElement('style'); el.id = 'themeVars'; document.head.appendChild(el); }

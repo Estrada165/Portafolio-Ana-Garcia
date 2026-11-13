@@ -1,994 +1,114 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Admin — Ana García Portfolio</title>
-  <link rel="icon" href="imagenes/logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-config.js"></script>
-  <style>
-    /* ── Variables (misma paleta que style.css) ── */
-    :root {
-      --accent:       #7C3AED;
-      --accent-light: #A78BFA;
-      --accent-soft:  rgba(124,58,237,.12);
-      --bg:           #FAF9F7;
-      --bg-card:      #FFFFFF;
-      --bg-soft:      #F3F0EB;
-      --border:       rgba(124,58,237,.18);
-      --text:         #1E1B18;
-      --text-2:       #6B6560;
-      --text-3:       #A09890;
-      --sh-md: 0 4px 12px rgba(0,0,0,.08);
-      --sh-lg: 0 12px 28px rgba(0,0,0,.10);
-      --r-sm:.375rem; --r-md:.625rem; --r-lg:1rem; --r-xl:1.5rem; --r-full:9999px;
-      --t-mid:.3s cubic-bezier(.4,0,.2,1);
-      --f-display:'Playfair Display',serif;
-      --f-body:'Inter',system-ui,sans-serif;
-    }
-    [data-theme="dark"] {
-      --bg:#1C1A17; --bg-card:#252320; --bg-soft:#2C2924;
-      --border:rgba(167,139,250,.18); --text:#EDE9E3;
-      --text-2:#A09890; --text-3:#6B6560;
-    }
-
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    html { font-size:16px; }
-    body { font-family:var(--f-body); background:var(--bg); color:var(--text); line-height:1.6; min-height:100vh; }
-
-    /* ── Login overlay ── */
-    #loginWrap {
-      position:fixed; inset:0; background:linear-gradient(135deg,var(--bg),var(--bg-soft));
-      display:flex; align-items:center; justify-content:center; z-index:1000;
-      transition:opacity .5s ease, visibility .5s ease;
-    }
-    #loginWrap.hidden { opacity:0; visibility:hidden; pointer-events:none; }
-
-    .login-card {
-      background:var(--bg-card); border:1px solid var(--border);
-      border-radius:var(--r-xl); padding:2.5rem; width:100%; max-width:400px;
-      box-shadow:var(--sh-lg); text-align:center;
-    }
-    .login-logo { width:64px; height:64px; object-fit:contain; margin:0 auto 1.25rem; }
-    .login-title { font-family:var(--f-display); font-size:1.75rem; font-weight:700; color:var(--text); margin-bottom:.3rem; }
-    .login-sub   { color:var(--text-2); font-size:.9rem; margin-bottom:2rem; }
-
-    /* ── Panel principal ── */
-    #adminWrap { display:none; flex-direction:column; min-height:100vh; }
-    #adminWrap.visible { display:flex; }
-
-    .admin-header {
-      background:var(--bg-card); border-bottom:1px solid var(--border);
-      padding:1rem 2rem; display:flex; align-items:center; justify-content:space-between;
-      position:sticky; top:0; z-index:100; box-shadow:var(--sh-md);
-    }
-    .admin-brand { display:flex; align-items:center; gap:.75rem; font-family:var(--f-display); font-size:1.2rem; font-weight:700; color:var(--text); }
-    .admin-brand img { width:36px; height:36px; object-fit:contain; }
-    .badge { background:var(--accent); color:#fff; font-size:.7rem; font-weight:600; padding:.2rem .5rem; border-radius:var(--r-full); text-transform:uppercase; letter-spacing:1px; }
-    .admin-actions { display:flex; gap:.75rem; align-items:center; }
-
-    .admin-body { display:flex; flex:1; overflow:hidden; }
-
-    /* ── Sidebar ── */
-    .sidebar {
-      width:220px; flex-shrink:0; background:var(--bg-soft); border-right:1px solid var(--border);
-      padding:1.5rem 1rem; display:flex; flex-direction:column; gap:.35rem;
-    }
-    .sidebar-label { font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-3); padding:.5rem .75rem; margin-top:.5rem; }
-    .sidebar-item {
-      display:flex; align-items:center; gap:.75rem; padding:.75rem .9rem;
-      border-radius:var(--r-md); cursor:pointer; transition:all var(--t-mid);
-      color:var(--text-2); font-size:.9rem; font-weight:500; border:none; background:none; text-align:left; width:100%;
-    }
-    .sidebar-item svg { width:18px; height:18px; flex-shrink:0; }
-    .sidebar-item:hover { background:var(--border); color:var(--text); }
-    .sidebar-item.active { background:var(--accent-soft); color:var(--accent); font-weight:600; }
-
-    /* ── Contenido ── */
-    .main-content { flex:1; padding:2rem; overflow-y:auto; }
-
-    .panel { display:none; }
-    .panel.active { display:block; }
-
-    .panel-title { font-family:var(--f-display); font-size:1.6rem; font-weight:700; color:var(--text); margin-bottom:.4rem; }
-    .panel-desc  { color:var(--text-2); font-size:.9rem; margin-bottom:1.75rem; }
-
-    /* ── Upload zone ── */
-    .upload-zone {
-      border:2px dashed var(--border); border-radius:var(--r-lg);
-      padding:2.5rem; text-align:center; cursor:pointer;
-      transition:all var(--t-mid); background:var(--bg-soft);
-      margin-bottom:1.5rem;
-    }
-    .upload-zone:hover, .upload-zone.dragover { border-color:var(--accent); background:var(--accent-soft); }
-    .upload-zone svg { width:40px; height:40px; color:var(--text-3); margin-bottom:.75rem; }
-    .upload-zone p   { color:var(--text-2); font-size:.9rem; }
-    .upload-zone strong { color:var(--accent); }
-    .upload-zone input { display:none; }
-
-    /* ── Formulario general ── */
-    .form-row  { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-    .form-group { margin-bottom:1rem; }
-    .form-group label {
-      display:flex; align-items:center; gap:.4rem;
-      font-size:.8rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;
-      color:var(--text-2); margin-bottom:.4rem;
-    }
-    .info-btn {
-      width:16px; height:16px; background:var(--text-3); color:#fff;
-      border-radius:50%; border:none; cursor:pointer; font-size:.65rem; font-weight:700;
-      display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
-      position:relative;
-    }
-    .info-btn:hover::after {
-      content:attr(data-tip);
-      position:absolute; bottom:120%; left:50%; transform:translateX(-50%);
-      background:var(--text); color:var(--bg-card); font-size:.75rem; font-weight:400;
-      padding:.4rem .75rem; border-radius:var(--r-md); white-space:nowrap; z-index:99;
-      box-shadow:var(--sh-md);
-    }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      width:100%; padding:.75rem 1rem; border:1px solid var(--border);
-      border-radius:var(--r-md); font-size:.92rem; font-family:var(--f-body);
-      background:var(--bg-soft); color:var(--text); transition:all var(--t-mid);
-    }
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
-
-    /* Toggle switch */
-    .toggle-row { display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
-    .toggle-label { font-size:.88rem; font-weight:500; color:var(--text); }
-    .toggle { position:relative; width:44px; height:24px; cursor:pointer; }
-    .toggle input { opacity:0; width:0; height:0; }
-    .toggle-slider {
-      position:absolute; inset:0; background:var(--text-3);
-      border-radius:var(--r-full); transition:all var(--t-mid);
-    }
-    .toggle-slider::before {
-      content:''; position:absolute; width:18px; height:18px;
-      left:3px; top:3px; background:#fff; border-radius:50%; transition:all var(--t-mid);
-    }
-    .toggle input:checked + .toggle-slider { background:var(--accent); }
-    .toggle input:checked + .toggle-slider::before { transform:translateX(20px); }
-
-    /* ── Grid de previsualización ── */
-    .preview-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; margin-top:1.25rem; }
-    .preview-item {
-      position:relative; aspect-ratio:1; border-radius:var(--r-md); overflow:hidden;
-      background:var(--bg-soft); border:1px solid var(--border);
-    }
-    .preview-item img { width:100%; height:100%; object-fit:cover; }
-    .preview-remove {
-      position:absolute; top:.4rem; right:.4rem; width:26px; height:26px;
-      background:rgba(220,38,38,.9); color:#fff; border:none; border-radius:50%;
-      cursor:pointer; display:flex; align-items:center; justify-content:center;
-      opacity:0; transition:opacity var(--t-mid);
-    }
-    .preview-item:hover .preview-remove { opacity:1; }
-    .preview-remove svg { width:14px; height:14px; }
-    .preview-name { position:absolute; bottom:0; left:0; right:0; background:rgba(30,27,24,.7); color:#fff; font-size:.7rem; padding:.3rem .5rem; }
-    .uploading-badge { position:absolute; inset:0; background:rgba(124,58,237,.6); display:flex; align-items:center; justify-content:center; color:#fff; font-size:.8rem; font-weight:600; }
-
-    /* ── Variaciones logos ── */
-    .variation-slot {
-      display:flex; align-items:center; gap:.75rem; padding:.75rem;
-      background:var(--bg-soft); border:1px solid var(--border); border-radius:var(--r-md); margin-bottom:.6rem;
-    }
-    .variation-thumb { width:48px; height:48px; border-radius:var(--r-sm); overflow:hidden; background:var(--bg-card); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-    .variation-thumb img { width:100%; height:100%; object-fit:contain; }
-    .variation-inputs { flex:1; display:flex; gap:.6rem; }
-    .variation-inputs input { padding:.5rem .75rem; font-size:.85rem; }
-    .variation-remove { width:32px; height:32px; background:transparent; color:var(--text-3); border:1px solid var(--border); border-radius:var(--r-md); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all var(--t-mid); }
-    .variation-remove:hover { background:#FEE2E2; color:#DC2626; border-color:#DC2626; }
-    .variation-remove svg { width:16px; height:16px; }
-
-    /* ── Tabla de registros ── */
-    .records-table { width:100%; border-collapse:collapse; margin-top:1.25rem; font-size:.88rem; }
-    .records-table th { padding:.65rem 1rem; background:var(--bg-soft); color:var(--text-2); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:1px; text-align:left; border-bottom:2px solid var(--border); }
-    .records-table td { padding:.7rem 1rem; border-bottom:1px solid var(--border); color:var(--text); vertical-align:middle; }
-    .records-table tr:hover td { background:var(--accent-soft); }
-    .thumb-sm { width:44px; height:44px; border-radius:var(--r-sm); overflow:hidden; background:var(--bg-soft); }
-    .thumb-sm img { width:100%; height:100%; object-fit:contain; }
-    .btn-del { padding:.35rem .75rem; background:#FEE2E2; color:#DC2626; border:1px solid #FCA5A5; border-radius:var(--r-sm); font-size:.8rem; font-weight:600; cursor:pointer; transition:all var(--t-mid); }
-    .btn-del:hover { background:#DC2626; color:#fff; }
-
-    /* ── Botones ── */
-    .btn-primary, .btn-secondary, .btn-ghost, .btn-icon {
-      display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
-      border:none; border-radius:var(--r-full); font-weight:600; cursor:pointer;
-      transition:all var(--t-mid); font-family:var(--f-body); font-size:.9rem;
-    }
-    .btn-primary  { padding:.75rem 1.5rem; background:var(--accent); color:#fff; }
-    .btn-primary:hover  { transform:translateY(-1px); box-shadow:0 8px 20px rgba(124,58,237,.35); }
-    .btn-secondary { padding:.75rem 1.5rem; background:var(--bg-soft); color:var(--text); border:1px solid var(--border); border-radius:var(--r-full); }
-    .btn-secondary:hover { background:var(--border); }
-    .btn-ghost { padding:.65rem 1.25rem; background:transparent; color:var(--text-2); border:1px solid var(--border); border-radius:var(--r-full); }
-    .btn-ghost:hover { background:var(--bg-soft); color:var(--text); }
-    .btn-icon { width:38px; height:38px; border-radius:var(--r-full); background:var(--bg-soft); color:var(--text-2); }
-    .btn-icon:hover { background:var(--accent-soft); color:var(--accent); }
-    .btn-icon svg { width:18px; height:18px; }
-    .btn-primary svg, .btn-secondary svg, .btn-ghost svg { width:16px; height:16px; }
-    .btn-primary:disabled, .btn-secondary:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-
-    /* ── Progress bar upload ── */
-    .upload-progress { width:100%; height:6px; background:var(--bg-soft); border-radius:var(--r-full); overflow:hidden; margin-top:.5rem; display:none; }
-    .upload-progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent-light)); width:0; transition:width .3s ease; border-radius:var(--r-full); }
-
-    /* ── Alerta / Toast ── */
-    .toast { position:fixed; top:1rem; right:1rem; z-index:9999; padding:.85rem 1.4rem; border-radius:var(--r-md); font-weight:500; font-size:.9rem; box-shadow:var(--sh-lg); animation:fadeUp .3s ease; }
-    .toast.success { background:#059669; color:#fff; }
-    .toast.error   { background:#DC2626; color:#fff; }
-    .toast.info    { background:var(--accent); color:#fff; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-
-    /* ── Tabs de secciones PDF ── */
-    .pdf-list { display:flex; flex-direction:column; gap:.9rem; margin-top:1.25rem; }
-    .pdf-row {
-      display:flex; align-items:center; gap:1rem; padding:1rem 1.25rem;
-      background:var(--bg-soft); border:1px solid var(--border); border-radius:var(--r-md);
-    }
-    .pdf-icon { width:40px; height:40px; background:var(--accent-soft); border-radius:var(--r-md); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .pdf-icon svg { width:22px; height:22px; color:var(--accent); }
-    .pdf-meta { flex:1; }
-    .pdf-name { font-weight:600; color:var(--text); font-size:.92rem; }
-    .pdf-size { color:var(--text-3); font-size:.8rem; }
-    .pdf-status { font-size:.8rem; font-weight:600; }
-    .pdf-status.ok  { color:#059669; }
-    .pdf-status.new { color:var(--accent); }
-
-    /* ── Stats dashboard ── */
-    .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:2rem; }
-    .stat-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.25rem; }
-    .stat-card-num { font-family:var(--f-display); font-size:2rem; font-weight:700; color:var(--accent); line-height:1; margin-bottom:.25rem; }
-    .stat-card-lbl { font-size:.8rem; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; }
-
-    /* ── Responsive ── */
-    @media(max-width:768px) {
-      .sidebar { display:none; }
-      .form-row { grid-template-columns:1fr; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel · Ana García</title>
+<link rel="icon" href="imagenes/logo.png">
+<link rel="preload" href="fonts/playfair.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="admin.css">
+<script>
+  (function () {
+    var t = null; try { t = localStorage.getItem('ag_theme'); } catch (e) {}
+    if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 </head>
 <body>
 
-<!-- ══ LOGIN ══════════════════════════════════════════════════ -->
-<div id="loginWrap">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.8 6.8 0 0 0 9.7 9.7z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.500l4.500 4.500L19 7.500"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.500 12S6 5.500 12 5.500 21.500 12 21.500 12 18 18.500 12 18.500 2.500 12 2.500 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.600 5.600A9.500 9.500 0 0 1 12 5.500c6 0 9.500 6.500 9.500 6.500a16 16 0 0 1-3 3.800M6.400 6.900A16 16 0 0 0 2.500 12S6 18.500 12 18.500a9.500 9.500 0 0 0 4-.9M9.900 9.900a3 3 0 0 0 4.200 4.200"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.500a1.500 1.500 0 0 0 1.500 1.500h7a1.500 1.500 0 0 0 1.500-1.500L18 7M9 7V4.500h6V7"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.800 2.800 0 0 0-4-4L4 16z"/><path d="M13.500 6.500l4 4"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 17v2.500A1.500 1.500 0 0 0 5.500 21h13a1.500 1.500 0 0 0 1.500-1.500V17"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 17v2.500A1.500 1.500 0 0 0 5.500 21h13a1.500 1.500 0 0 0 1.500-1.500V17"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8.500a1.500 1.500 0 0 1-1.500 1.500H15v-6H9v6H5.500A1.500 1.500 0 0 1 4 19.500z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.500" y="4.500" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.700"/><path d="M4 17l4.500-4.500L13 17l3-3 4.500 4.500"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3.500H7.500a1.500 1.500 0 0 0-1.500 1.500v14a1.500 1.500 0 0 0 1.500 1.500h9a1.500 1.500 0 0 0 1.500-1.500V7.500z"/><path d="M14 3.500v4h4M9 12.500h6M9 16h4"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.400 15a1.700 1.700 0 0 0 .3 1.800l.1.1a2 2 0 1 1-2.800 2.800l-.1-.1a1.700 1.700 0 0 0-1.800-.3 1.700 1.700 0 0 0-1 1.500V21a2 2 0 1 1-4 0v-.1a1.700 1.700 0 0 0-1.100-1.500 1.700 1.700 0 0 0-1.800.3l-.1.1a2 2 0 1 1-2.800-2.800l.1-.1a1.700 1.700 0 0 0 .3-1.800 1.700 1.700 0 0 0-1.500-1H3a2 2 0 1 1 0-4h.1a1.700 1.700 0 0 0 1.500-1.100 1.700 1.700 0 0 0-.3-1.800l-.1-.1a2 2 0 1 1 2.800-2.800l.1.100a1.700 1.700 0 0 0 1.800.3h0a1.700 1.700 0 0 0 1-1.500V3a2 2 0 1 1 4 0v.1a1.700 1.700 0 0 0 1 1.500 1.700 1.700 0 0 0 1.800-.3l.1-.1a2 2 0 1 1 2.800 2.800l-.1.1a1.700 1.700 0 0 0-.3 1.800v0a1.700 1.700 0 0 0 1.500 1H21a2 2 0 1 1 0 4h-.1a1.700 1.700 0 0 0-1.500 1z"/></symbol>
+  <symbol id="i-drag" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.200"/><circle cx="15" cy="6" r="1.200"/><circle cx="9" cy="12" r="1.200"/><circle cx="15" cy="12" r="1.200"/><circle cx="9" cy="18" r="1.200"/><circle cx="15" cy="18" r="1.200"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.500A1.500 1.500 0 0 1 16.500 20h-11A1.500 1.500 0 0 1 4 18.500v-11A1.500 1.500 0 0 1 5.500 6H10"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.800l2.500 5.200 5.700.8-4.100 4 1 5.700-5.100-2.700-5.100 2.700 1-5.700-4.100-4 5.700-.8z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.500" width="14" height="10" rx="2.500"/><path d="M8 10.500V8a4 4 0 0 1 8 0v2.500"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M4 7.500A2.500 2.500 0 0 1 6.500 5H10l2 2.500h5.500A2.500 2.500 0 0 1 20 10v7.500a2.500 2.500 0 0 1-2.500 2.500h-11A2.500 2.500 0 0 1 4 17.500z"/><path d="M12 10.500v5M9.800 13.700l2.200 2.200 2.200-2.200"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3.500a8.500 8.500 0 1 0 0 17c1.400 0 2-.9 2-1.800 0-1.600-1.500-1.700-1.500-3 0-1 .8-1.700 1.800-1.700H16a4.500 4.500 0 0 0 4.500-4.500C20.500 5.800 16.700 3.500 12 3.500z"/><circle cx="7.800" cy="11" r="1"/><circle cx="10.500" cy="7.200" r="1"/><circle cx="15" cy="7.500" r="1"/></symbol>
+</svg>
+
+<!-- ══ Acceso ══ -->
+<div id="loginView" class="login" hidden>
+  <form class="login-card" id="loginForm" novalidate>
+    <img src="imagenes/logo.png" alt="" width="60" height="60">
+    <h1>Panel de Ana</h1>
+    <p class="sub">Entra para administrar tu portafolio.</p>
+    <div id="loginMsg" class="msg err" hidden role="alert"></div>
+    <div class="field"><label for="lEmail">Correo</label><input type="email" id="lEmail" autocomplete="username" required></div>
+    <div class="field"><label for="lPass">Contraseña</label>
+      <div class="pw"><input type="password" id="lPass" autocomplete="current-password" required>
+        <button type="button" class="icon-btn" id="lShow" data-tip="Mostrar contraseña" aria-label="Mostrar contraseña"><svg class="i"><use href="#i-eye"/></svg></button></div></div>
+    <button class="btn primary" id="lBtn" type="submit">Entrar</button>
+  </form>
+</div>
+
+<!-- ══ Configuración faltante ══ -->
+<div id="setupView" class="login" hidden>
   <div class="login-card">
-    <img src="imagenes/logo.png" alt="Logo" class="login-logo">
-    <h1 class="login-title">Panel Admin</h1>
-    <p class="login-sub">Acceso exclusivo para Ana Lucía García</p>
-
-    <div class="form-group">
-      <label>
-        Usuario
-        <button class="info-btn" data-tip="Ingresa tu nombre de usuario">i</button>
-      </label>
-      <input type="text" id="loginUser" placeholder="usuario" autocomplete="username">
-    </div>
-    <div class="form-group">
-      <label>
-        Contraseña
-        <button class="info-btn" data-tip="Ingresa tu contraseña">i</button>
-      </label>
-      <input type="password" id="loginPass" placeholder="contraseña" autocomplete="current-password">
-    </div>
-    <p id="loginError" style="color:#DC2626;font-size:.85rem;margin-bottom:1rem;display:none;">
-      Usuario o contraseña incorrectos
-    </p>
-    <button class="btn-primary" style="width:100%" onclick="adminLogin()">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10,17V14H3V10H10V7L15,12L10,17M10,2H19A2,2 0 0,1 21,4V20A2,2 0 0,1 19,22H10A2,2 0 0,1 8,20V18H10V20H19V4H10V6H8V4A2,2 0 0,1 10,2Z"/></svg>
-      Entrar
-    </button>
+    <img src="imagenes/logo.png" alt="" width="60" height="60">
+    <h1>Falta conectar Supabase</h1>
+    <p class="sub">Abre <b>config.js</b> y pega tu <b>Project URL</b> y tu <b>anon public key</b> (Supabase → Settings → API). Nunca uses la service_role.</p>
   </div>
 </div>
 
-<!-- ══ PANEL ADMIN ═════════════════════════════════════════════ -->
-<div id="adminWrap">
-
-  <!-- Header -->
-  <header class="admin-header">
-    <div class="admin-brand">
-      <img src="imagenes/logo.png" alt="Logo">
-      Ana García
-      <span class="badge">Admin</span>
-    </div>
-    <div class="admin-actions">
-      <a href="index.html" target="_blank" class="btn-ghost">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/></svg>
-        Ver Portafolio
-      </a>
-      <button class="btn-icon" onclick="toggleAdminTheme()" title="Cambiar tema">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </button>
-      <button class="btn-ghost" onclick="adminLogout()">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17,17.25V14H10V10H17V6.75L22.25,12L17,17.25M13,2A2,2 0 0,1 15,4V8H13V4H4V20H13V16H15V20A2,2 0 0,1 13,22H4A2,2 0 0,1 2,20V4A2,2 0 0,1 4,2H13Z"/></svg>
-        Salir
-      </button>
-    </div>
-  </header>
-
-  <div class="admin-body">
-    <!-- Sidebar -->
-    <nav class="sidebar">
-      <span class="sidebar-label">General</span>
-      <button class="sidebar-item active" onclick="showPanel('dashboard',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/></svg>
-        Resumen
-      </button>
-
-      <span class="sidebar-label">Contenido</span>
-      <button class="sidebar-item" onclick="showPanel('mockups',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4,6H20V16H4M20,18A2,2 0 0,0 22,16V6C22,4.89 21.1,4 20,4H4C2.89,4 2,4.89 2,6V16A2,2 0 0,0 4,18H0V20H24V18H20Z"/></svg>
-        Mockups
-      </button>
-      <button class="sidebar-item" onclick="showPanel('designs',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21,3H3C2,3 1,4 1,5V19A2,2 0 0,0 3,21H21C22,21 23,20 23,19V5C23,4 22,3 21,3M5,17L8.5,12.5L11,15.5L14.5,11L19,17H5Z"/></svg>
-        Diseños
-      </button>
-      <button class="sidebar-item" onclick="showPanel('logos',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"/></svg>
-        Logos
-      </button>
-      <button class="sidebar-item" onclick="showPanel('illustrations',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A1.5,1.5 0 0,0 13.5,19.5C13.5,19.11 13.35,18.76 13.11,18.5C12.88,18.23 12.73,17.88 12.73,17.5A1.5,1.5 0 0,1 14.23,16H16A5,5 0 0,0 21,11C21,6.58 16.97,3 12,3Z"/></svg>
-        Ilustraciones
-      </button>
-      <button class="sidebar-item" onclick="showPanel('featured',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>
-        Destacados
-      </button>
-      <button class="sidebar-item" onclick="showPanel('pdfs',this)">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
-        Guías PDF
-      </button>
+<!-- ══ Panel ══ -->
+<div id="app" hidden>
+  <header class="top"><div class="top-in">
+    <a class="brand" href="index.html" target="_blank" rel="noopener"><img src="imagenes/logo.png" alt="" width="34" height="34">Ana García <small>Panel</small></a>
+    <nav class="tabs" role="tablist" aria-label="Secciones del panel">
+      <button class="tab" role="tab" data-view="home"><svg class="i"><use href="#i-home"/></svg>Resumen</button>
+      <button class="tab" role="tab" data-view="works"><svg class="i"><use href="#i-image"/></svg>Piezas</button>
+      <button class="tab" role="tab" data-view="pdf"><svg class="i"><use href="#i-doc"/></svg>Guías PDF</button>
+      <button class="tab" role="tab" data-view="site"><svg class="i"><use href="#i-gear"/></svg>Sitio</button>
     </nav>
+    <div class="top-actions">
+      <span class="who" id="who"></span>
+      <a class="icon-btn" href="index.html" target="_blank" rel="noopener" data-tip="Ver el sitio público" aria-label="Ver el sitio público"><svg class="i"><use href="#i-external"/></svg></a>
+      <button class="icon-btn" id="themeBtn" data-tip="Cambiar tema" aria-label="Cambiar tema claro u oscuro"><svg class="i"><use href="#i-moon"/></svg></button>
+      <button class="icon-btn" id="logoutBtn" data-tip="Cerrar sesión" aria-label="Cerrar sesión"><svg class="i"><use href="#i-logout"/></svg></button>
+    </div>
+  </div></header>
 
-    <!-- Contenido principal -->
-    <main class="main-content">
-
-      <!-- Dashboard -->
-      <div class="panel active" id="panel-dashboard">
-        <h2 class="panel-title">Resumen del Portafolio</h2>
-        <p class="panel-desc">Todo tu contenido en un vistazo.</p>
-        <div class="stats-row" id="statsRow">
-          <div class="stat-card"><div class="stat-card-num" id="st-mockups">—</div><div class="stat-card-lbl">Mockups</div></div>
-          <div class="stat-card"><div class="stat-card-num" id="st-designs">—</div><div class="stat-card-lbl">Diseños</div></div>
-          <div class="stat-card"><div class="stat-card-num" id="st-logos">—</div><div class="stat-card-lbl">Logos</div></div>
-          <div class="stat-card"><div class="stat-card-num" id="st-illus">—</div><div class="stat-card-lbl">Ilustraciones</div></div>
-          <div class="stat-card"><div class="stat-card-num" id="st-featured">—</div><div class="stat-card-lbl">Destacados</div></div>
-          <div class="stat-card"><div class="stat-card-num" id="st-pdfs">—</div><div class="stat-card-lbl">PDFs</div></div>
-        </div>
-      </div>
-
-      <!-- ── Mockups ── -->
-      <div class="panel" id="panel-mockups">
-        <h2 class="panel-title">Mockups</h2>
-        <p class="panel-desc">Sube presentaciones de diseño. Imágenes JPG/PNG, máx. 5 MB por archivo.</p>
-
-        <div class="upload-zone" id="zone-mockups" onclick="document.getElementById('file-mockups').click()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
-          <p>Arrastra imágenes aquí o <strong>haz clic para seleccionar</strong></p>
-          <p style="font-size:.8rem;margin-top:.3rem;color:var(--text-3)">JPG, PNG — Máx 5 MB por archivo</p>
-          <input type="file" id="file-mockups" multiple accept="image/*" onchange="handleFiles(this,'mockups')">
-        </div>
-        <div class="upload-progress" id="prog-mockups"><div class="upload-progress-fill" id="fill-mockups"></div></div>
-
-        <div class="form-row" style="margin-bottom:1rem">
-          <div class="form-group">
-            <label>Título del grupo <button class="info-btn" data-tip="Nombre que verá el visitante al pasar el cursor">i</button></label>
-            <input type="text" id="meta-mockups-title" placeholder="ej. Mockup Packaging Café">
-          </div>
-          <div class="form-group">
-            <label>Categoría <button class="info-btn" data-tip="Tipo de proyecto para la etiqueta">i</button></label>
-            <input type="text" id="meta-mockups-cat" placeholder="ej. Branding / Empaques">
-          </div>
-        </div>
-
-        <div class="preview-grid" id="prev-mockups"></div>
-        <div style="display:flex;gap:.75rem;margin-top:1.25rem">
-          <button class="btn-primary" id="save-mockups" onclick="saveItems('mockups')" disabled>
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
-            Guardar mockups
-          </button>
-        </div>
-        <h3 style="font-family:var(--f-display);font-size:1.1rem;margin-top:2rem;margin-bottom:.5rem">Mockups actuales</h3>
-        <table class="records-table" id="tbl-mockups"><thead><tr><th>Vista</th><th>Título</th><th>Categoría</th><th>Acción</th></tr></thead><tbody></tbody></table>
-      </div>
-
-      <!-- ── Diseños ── -->
-      <div class="panel" id="panel-designs">
-        <h2 class="panel-title">Diseños</h2>
-        <p class="panel-desc">Sube diseños gráficos. Puedes asignar un nombre y tipo a cada uno.</p>
-
-        <div class="upload-zone" onclick="document.getElementById('file-designs').click()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
-          <p>Arrastra imágenes aquí o <strong>haz clic para seleccionar</strong></p>
-          <input type="file" id="file-designs" multiple accept="image/*" onchange="handleFiles(this,'designs')">
-        </div>
-        <div class="upload-progress" id="prog-designs"><div class="upload-progress-fill" id="fill-designs"></div></div>
-
-        <div class="form-row" style="margin-bottom:1rem">
-          <div class="form-group">
-            <label>Nombre del diseño <button class="info-btn" data-tip="Título visible en el portafolio">i</button></label>
-            <input type="text" id="meta-designs-title" placeholder="ej. Flyer Evento Cultural">
-          </div>
-          <div class="form-group">
-            <label>Tipo de diseño <button class="info-btn" data-tip="Categoría del proyecto">i</button></label>
-            <select id="meta-designs-cat">
-              <option value="Diseño Publicitario">Diseño Publicitario</option>
-              <option value="Social Media">Social Media</option>
-              <option value="Branding">Branding</option>
-              <option value="Editorial">Editorial</option>
-              <option value="Empaque">Empaque</option>
-              <option value="Otro">Otro</option>
-            </select>
-          </div>
-        </div>
-        <div class="preview-grid" id="prev-designs"></div>
-        <div style="display:flex;gap:.75rem;margin-top:1.25rem">
-          <button class="btn-primary" id="save-designs" onclick="saveItems('designs')" disabled>
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
-            Guardar diseños
-          </button>
-        </div>
-        <h3 style="font-family:var(--f-display);font-size:1.1rem;margin-top:2rem;margin-bottom:.5rem">Diseños actuales</h3>
-        <table class="records-table" id="tbl-designs"><thead><tr><th>Vista</th><th>Nombre</th><th>Tipo</th><th>Acción</th></tr></thead><tbody></tbody></table>
-      </div>
-
-      <!-- ── Logos ── -->
-      <div class="panel" id="panel-logos">
-        <h2 class="panel-title">Logos</h2>
-        <p class="panel-desc">Sube el logo principal y activa variaciones de color si las tienes.</p>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Nombre del logo <button class="info-btn" data-tip="Ej: Energi, North Energy Corp">i</button></label>
-            <input type="text" id="logo-name" placeholder="Nombre de la marca">
-          </div>
-          <div class="form-group">
-            <label>Descripción <button class="info-btn" data-tip="Ej: Identidad Corporativa">i</button></label>
-            <input type="text" id="logo-desc" placeholder="Tipo de logo">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Imagen principal <button class="info-btn" data-tip="PNG con fondo transparente recomendado">i</button></label>
-          <div class="upload-zone" style="padding:1.5rem" onclick="document.getElementById('file-logo-main').click()">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
-            <p>Logo principal (PNG recomendado)</p>
-            <input type="file" id="file-logo-main" accept="image/*" onchange="handleLogoMain(this)">
-          </div>
-          <div id="prev-logo-main" class="preview-grid" style="margin-top:.75rem"></div>
-        </div>
-
-        <div class="toggle-row">
-          <label class="toggle"><input type="checkbox" id="has-variations" onchange="toggleVariations(this)"><span class="toggle-slider"></span></label>
-          <span class="toggle-label">Este logo tiene variaciones de color</span>
-          <button class="info-btn" data-tip="Activa si tienes versiones en diferentes colores (negro, blanco, etc.)">i</button>
-        </div>
-
-        <div id="variations-section" style="display:none">
-          <p style="font-size:.85rem;color:var(--text-2);margin-bottom:.75rem">Sube cada variación e indica su nombre de color.</p>
-          <div id="variations-list"></div>
-          <button class="btn-ghost" style="margin-top:.5rem" onclick="addVariationSlot()">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></svg>
-            Agregar variación
-          </button>
-        </div>
-
-        <div style="display:flex;gap:.75rem;margin-top:1.5rem">
-          <button class="btn-primary" id="save-logo" onclick="saveLogo()">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
-            Guardar logo
-          </button>
-        </div>
-        <h3 style="font-family:var(--f-display);font-size:1.1rem;margin-top:2rem;margin-bottom:.5rem">Logos actuales</h3>
-        <table class="records-table" id="tbl-logos"><thead><tr><th>Vista</th><th>Nombre</th><th>Variaciones</th><th>Acción</th></tr></thead><tbody></tbody></table>
-      </div>
-
-      <!-- ── Ilustraciones ── -->
-      <div class="panel" id="panel-illustrations">
-        <h2 class="panel-title">Ilustraciones</h2>
-        <p class="panel-desc">Sube tu arte digital. La primera imagen se mostrará grande, las demás en tamaño normal.</p>
-
-        <div class="upload-zone" onclick="document.getElementById('file-illus').click()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z"/></svg>
-          <p>Arrastra ilustraciones aquí o <strong>haz clic para seleccionar</strong></p>
-          <input type="file" id="file-illus" multiple accept="image/*" onchange="handleFiles(this,'illustrations')">
-        </div>
-        <div class="form-row" style="margin-bottom:1rem">
-          <div class="form-group">
-            <label>Título <button class="info-btn" data-tip="Nombre de la ilustración">i</button></label>
-            <input type="text" id="meta-illustrations-title" placeholder="ej. Arte Conceptual Urbano">
-          </div>
-          <div class="form-group">
-            <label>Estilo <button class="info-btn" data-tip="Técnica o estilo artístico">i</button></label>
-            <input type="text" id="meta-illustrations-cat" placeholder="ej. Estilo Moderno / Técnica Mixta">
-          </div>
-        </div>
-        <div class="preview-grid" id="prev-illustrations"></div>
-        <div style="display:flex;gap:.75rem;margin-top:1.25rem">
-          <button class="btn-primary" id="save-illustrations" onclick="saveItems('illustrations')" disabled>
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
-            Guardar ilustraciones
-          </button>
-        </div>
-        <h3 style="font-family:var(--f-display);font-size:1.1rem;margin-top:2rem;margin-bottom:.5rem">Ilustraciones actuales</h3>
-        <table class="records-table" id="tbl-illustrations"><thead><tr><th>Vista</th><th>Título</th><th>Estilo</th><th>Acción</th></tr></thead><tbody></tbody></table>
-      </div>
-
-      <!-- ── Destacados ── -->
-      <div class="panel" id="panel-featured">
-        <h2 class="panel-title">Proyectos Destacados</h2>
-        <p class="panel-desc">Máximo 3 proyectos. Estos aparecen primero en el portafolio.</p>
-        <div class="upload-zone" onclick="document.getElementById('file-featured').click()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>
-          <p>Sube hasta 3 imágenes de proyectos destacados</p>
-          <input type="file" id="file-featured" multiple accept="image/*" onchange="handleFiles(this,'featured')">
-        </div>
-        <div class="form-row" style="margin-bottom:1rem">
-          <div class="form-group">
-            <label>Título del proyecto</label>
-            <input type="text" id="meta-featured-title" placeholder="ej. Rebranding Corporativo">
-          </div>
-          <div class="form-group">
-            <label>Descripción breve</label>
-            <input type="text" id="meta-featured-cat" placeholder="ej. Renovación completa de identidad visual">
-          </div>
-        </div>
-        <div class="preview-grid" id="prev-featured"></div>
-        <div style="display:flex;gap:.75rem;margin-top:1.25rem">
-          <button class="btn-primary" id="save-featured" onclick="saveItems('featured')" disabled>
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
-            Guardar destacados
-          </button>
-        </div>
-        <h3 style="font-family:var(--f-display);font-size:1.1rem;margin-top:2rem;margin-bottom:.5rem">Destacados actuales</h3>
-        <table class="records-table" id="tbl-featured"><thead><tr><th>Vista</th><th>Título</th><th>Descripción</th><th>Acción</th></tr></thead><tbody></tbody></table>
-      </div>
-
-      <!-- ── PDFs ── -->
-      <div class="panel" id="panel-pdfs">
-        <h2 class="panel-title">Guías Visuales (PDF)</h2>
-        <p class="panel-desc">Sube los manuales de marca en PDF. Máximo 10 MB por archivo. Recomendado: comprime el PDF antes de subir si pesa más de 10 MB.</p>
-
-        <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:1.5rem;font-size:.88rem;color:var(--text-2)">
-          <strong style="color:var(--text)">Cómo comprimir un PDF gratis:</strong> Ve a
-          <a href="https://www.ilovepdf.com/compress_pdf" target="_blank" style="color:var(--accent)">ilovepdf.com/compress_pdf</a>,
-          sube tu PDF y descarga la versión comprimida. Luego súbelo aquí.
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Identificador <button class="info-btn" data-tip="Código corto: egp, eai, etc. Sin espacios.">i</button></label>
-            <input type="text" id="pdf-slug" placeholder="ej. egp">
-          </div>
-          <div class="form-group">
-            <label>Nombre visible <button class="info-btn" data-tip="Este nombre aparece en la pestaña del portafolio">i</button></label>
-            <input type="text" id="pdf-name" placeholder="ej. Manual EGP">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Cliente</label>
-            <input type="text" id="pdf-client" placeholder="ej. EGP Company">
-          </div>
-          <div class="form-group">
-            <label>Año</label>
-            <input type="number" id="pdf-year" placeholder="2025" min="2020" max="2030">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Descripción breve</label>
-          <textarea id="pdf-desc" rows="2" placeholder="Guía visual completa de identidad corporativa..."></textarea>
-        </div>
-
-        <div class="upload-zone" id="zone-pdfs" onclick="document.getElementById('file-pdf').click()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
-          <p>Selecciona el archivo PDF (máx. 10 MB)</p>
-          <input type="file" id="file-pdf" accept=".pdf" onchange="handlePDF(this)">
-        </div>
-        <div class="upload-progress" id="prog-pdfs"><div class="upload-progress-fill" id="fill-pdfs"></div></div>
-
-        <div style="display:flex;gap:.75rem;margin-top:1.25rem">
-          <button class="btn-primary" id="save-pdf" onclick="savePDF()">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"/></svg>
-            Guardar PDF
-          </button>
-        </div>
-
-        <h3 style="font-family:var(--f-display);font-size:1.1rem;margin-top:2rem;margin-bottom:.5rem">PDFs actuales</h3>
-        <div class="pdf-list" id="pdf-list"></div>
-      </div>
-
-    </main>
-  </div>
+  <main>
+    <section class="view" id="v-home" hidden></section>
+    <section class="view" id="v-works" hidden></section>
+    <section class="view" id="v-pdf" hidden></section>
+    <section class="view" id="v-site" hidden></section>
+  </main>
 </div>
 
-<script>
-/* ════════════════════════════════════════════════════════════
-   admin.js  —  lógica del panel
-   ════════════════════════════════════════════════════════════ */
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div class="d-head"><h3 id="dlgTitle"></h3><button class="icon-btn ghost" id="dlgX" data-tip="Cerrar" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="d-body" id="dlgBody"></div>
+  <div class="d-foot" id="dlgFoot"></div>
+</dialog>
+<div id="progress" class="progress-card" hidden role="status" aria-live="polite"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<input type="file" id="filePick" hidden>
 
-// Estado temporal de archivos seleccionados por sección
-const pending = { mockups:[], designs:[], logos:[], illustrations:[], featured:[] };
-let pendingLogoMain = null;
-let pendingPDF = null;
-const variationFiles = []; // [{file, name}]
-
-// ── Auth ─────────────────────────────────────────────────────
-function adminLogin() {
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value;
-  const err = document.getElementById('loginError');
-
-  if (Auth.login(u, p)) {
-    err.style.display = 'none';
-    document.getElementById('loginWrap').classList.add('hidden');
-    document.getElementById('adminWrap').classList.add('visible');
-    loadDashboard();
-  } else {
-    err.style.display = 'block';
-  }
-}
-document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
-
-function adminLogout() {
-  Auth.logout();
-  document.getElementById('adminWrap').classList.remove('visible');
-  document.getElementById('loginWrap').classList.remove('hidden');
-}
-
-// Auto-login si ya estaba autenticado
-if (Auth.isLogged()) {
-  document.getElementById('loginWrap').classList.add('hidden');
-  document.getElementById('adminWrap').classList.add('visible');
-  window.addEventListener('load', loadDashboard);
-}
-
-// ── Tema ─────────────────────────────────────────────────────
-function toggleAdminTheme() {
-  const curr = document.documentElement.getAttribute('data-theme') || 'light';
-  document.documentElement.setAttribute('data-theme', curr === 'light' ? 'dark' : 'light');
-}
-
-// ── Navegación entre paneles ──────────────────────────────────
-function showPanel(id, btn) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-  document.getElementById(`panel-${id}`)?.classList.add('active');
-  if (btn) btn.classList.add('active');
-  // PDFs usan su propia lista; el resto usa la tabla genérica
-  if (id === 'pdfs') {
-    loadPDFList();
-  } else {
-    loadTable(id);
-  }
-}
-
-// ── Dashboard stats ──────────────────────────────────────────
-async function loadDashboard() {
-  const tables = ['mockups','designs','logos','illustrations','featured','pdfs'];
-  const ids = ['st-mockups','st-designs','st-logos','st-illus','st-featured','st-pdfs'];
-  for (let i = 0; i < tables.length; i++) {
-    const rows = await DB.getAll(tables[i]);
-    document.getElementById(ids[i]).textContent = rows.length;
-  }
-  // Actualizar lista de PDFs si el panel está visible
-  if (document.getElementById('panel-pdfs')?.classList.contains('active')) {
-    loadPDFList();
-  }
-}
-
-// ── Tabla de registros ────────────────────────────────────────
-// ── Tabla de registros ────────────────────────────────────────
-async function loadTable(section) {
-  const el = document.getElementById(`tbl-${section}`)?.querySelector('tbody');
-  if (!el) return;
-  const rows = await DB.getAll(section);
-
-  // Separar registros válidos de corruptos (sin image_url)
-  const valid   = rows.filter(r => r.image_url || r.main_image || r.url);
-  const corrupt = rows.filter(r => !r.image_url && !r.main_image && !r.url);
-
-  if (rows.length === 0) {
-    el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:1.5rem">Sin registros aún</td></tr>';
-    return;
-  }
-
-  let html = valid.map(r => `
-    <tr>
-      <td><div class="thumb-sm"><img src="${r.image_url || r.main_image || ''}" alt="" onerror="this.style.display='none'"></div></td>
-      <td>${r.title || r.name || '—'}</td>
-      <td>${r.category || r.description || r.slug || '—'}</td>
-      <td><button class="btn-del" onclick="deleteRecord('${section}',${r.id})">Eliminar</button></td>
-    </tr>`).join('');
-
-  // Mostrar registros corruptos con opción de limpiar
-  if (corrupt.length > 0) {
-    html += `<tr style="background:#FEF2F2">
-      <td colspan="3" style="color:#DC2626;font-size:.82rem;padding:.75rem 1rem">
-        ⚠️ ${corrupt.length} registro${corrupt.length > 1 ? 's' : ''} sin imagen (subida incompleta).
-      </td>
-      <td><button class="btn-del" onclick="cleanCorrupt('${section}')">Limpiar</button></td>
-    </tr>`;
-  }
-
-  el.innerHTML = html;
-}
-
-// Elimina registros corruptos (sin image_url) de una tabla
-async function cleanCorrupt(section) {
-  const rows = await DB.getAll(section);
-  const corrupt = rows.filter(r => !r.image_url && !r.main_image && !r.url);
-  for (const r of corrupt) {
-    try { await DB.remove(section, r.id); } catch {}
-  }
-  toast(`${corrupt.length} registro${corrupt.length > 1 ? 's corruptos eliminados' : ' corrupto eliminado'}`, 'success');
-  loadTable(section);
-  loadDashboard();
-}
-
-async function deleteRecord(table, id) {
-  if (!confirm('¿Eliminar este registro?')) return;
-  try {
-    await DB.remove(table, id);
-    toast('Eliminado correctamente', 'success');
-    // PDFs tienen su propia lista, el resto usa la tabla genérica
-    if (table === 'pdfs') {
-      loadPDFList();
-    } else {
-      loadTable(table);
-    }
-    loadDashboard();
-  } catch(e) { toast(`Error al eliminar: ${e.message || ''}`, 'error'); }
-}
-
-// ── Manejo de archivos (imágenes) ─────────────────────────────
-function handleFiles(input, section) {
-  const files = [...input.files];
-  pending[section] = files;
-  const grid = document.getElementById(`prev-${section}`);
-  grid.innerHTML = '';
-  files.forEach((f, i) => {
-    const url = URL.createObjectURL(f);
-    grid.insertAdjacentHTML('beforeend', `
-      <div class="preview-item" id="prev-${section}-${i}">
-        <img src="${url}" alt="${f.name}">
-        <div class="preview-name">${f.name}</div>
-        <button class="preview-remove" onclick="removePending('${section}',${i})">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
-        </button>
-      </div>`);
-  });
-  const btn = document.getElementById(`save-${section}`);
-  if (btn) btn.disabled = files.length === 0;
-}
-
-function removePending(section, idx) {
-  pending[section].splice(idx, 1);
-  handleFilesRefresh(section);
-}
-
-function handleFilesRefresh(section) {
-  const fakeInput = { files: pending[section] };
-  handleFiles(fakeInput, section);
-}
-
-// ── Guardar imágenes ──────────────────────────────────────────
-async function saveItems(section) {
-  if (!pending[section].length) { toast('Selecciona al menos una imagen primero', 'info'); return; }
-  const title = document.getElementById(`meta-${section}-title`)?.value.trim() || '';
-  const cat   = document.getElementById(`meta-${section}-cat`)?.value.trim()   || '';
-  const btn   = document.getElementById(`save-${section}`);
-  const prog  = document.getElementById(`prog-${section}`);
-  const fill  = document.getElementById(`fill-${section}`);
-
-  btn.disabled = true;
-  btn.textContent = 'Subiendo…';
-  if (prog) prog.style.display = 'block';
-
-  const files  = pending[section];
-  const bucket = BUCKET[section] || section;
-  let done = 0, failed = 0;
-
-  for (const file of files) {
-    try {
-      const url = await Storage.upload(bucket, file);
-      await DB.insert(section, { image_url: url, title: title || file.name, category: cat });
-      done++;
-      if (fill) fill.style.width = `${(done / files.length) * 100}%`;
-    } catch (e) {
-      failed++;
-      let msg = e.message || 'Error desconocido';
-      // Detectar error de políticas
-      if (msg.includes('row-level security') || msg.includes('policy') || msg.includes('403') || msg.includes('Unauthorized')) {
-        msg = '⚠️ Sin permisos de escritura en Storage. Ejecuta el SQL de políticas del README (Paso 4b).';
-      }
-      toast(msg, 'error');
-    }
-  }
-
-  if (prog) setTimeout(() => { prog.style.display = 'none'; if (fill) fill.style.width = '0'; }, 1000);
-
-  const saveBtn = document.getElementById(`save-${section}`);
-  if (saveBtn) { saveBtn.textContent = 'Guardar ' + section; }
-
-  if (done > 0) {
-    pending[section] = [];
-    document.getElementById(`prev-${section}`).innerHTML = '';
-    if (saveBtn) saveBtn.disabled = true;
-    toast(`${done} archivo${done !== 1 ? 's' : ''} guardado${done !== 1 ? 's' : ''} correctamente`, 'success');
-    loadTable(section);
-    loadDashboard();
-  }
-}
-
-// ── Logo principal ────────────────────────────────────────────
-function handleLogoMain(input) {
-  pendingLogoMain = input.files[0];
-  if (!pendingLogoMain) return;
-  const url = URL.createObjectURL(pendingLogoMain);
-  document.getElementById('prev-logo-main').innerHTML = `
-    <div class="preview-item"><img src="${url}" alt="Logo principal"></div>`;
-}
-
-function toggleVariations(cb) {
-  document.getElementById('variations-section').style.display = cb.checked ? 'block' : 'none';
-  if (cb.checked && document.getElementById('variations-list').children.length === 0) addVariationSlot();
-}
-
-let varSlotCount = 0;
-function addVariationSlot() {
-  const idx = varSlotCount++;
-  variationFiles[idx] = null;
-  document.getElementById('variations-list').insertAdjacentHTML('beforeend', `
-    <div class="variation-slot" id="vslot-${idx}">
-      <div class="variation-thumb" id="vthumb-${idx}">
-        <svg viewBox="0 0 24 24" fill="currentColor" style="width:24px;height:24px;color:var(--text-3)"><path d="M21,3H3C2,3 1,4 1,5V19A2,2 0 0,0 3,21H21C22,21 23,20 23,19V5C23,4 22,3 21,3M5,17L8.5,12.5L11,15.5L14.5,11L19,17H5Z"/></svg>
-      </div>
-      <div class="variation-inputs">
-        <input type="text" placeholder="Nombre del color (ej. Negro)" id="vname-${idx}">
-        <label style="padding:.5rem 1rem;background:var(--accent);color:#fff;border-radius:var(--r-md);cursor:pointer;font-size:.82rem;font-weight:600;white-space:nowrap">
-          Subir imagen
-          <input type="file" accept="image/*" style="display:none" onchange="setVariationFile(${idx},this)">
-        </label>
-      </div>
-      <button class="variation-remove" onclick="document.getElementById('vslot-${idx}').remove()">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
-      </button>
-    </div>`);
-}
-
-function setVariationFile(idx, input) {
-  variationFiles[idx] = input.files[0];
-  if (!variationFiles[idx]) return;
-  const url = URL.createObjectURL(variationFiles[idx]);
-  document.getElementById(`vthumb-${idx}`).innerHTML = `<img src="${url}" alt="">`;
-}
-
-async function saveLogo() {
-  const name = document.getElementById('logo-name').value.trim();
-  const desc = document.getElementById('logo-desc').value.trim();
-  if (!name || !pendingLogoMain) { toast('Completa nombre e imagen principal', 'error'); return; }
-
-  try {
-    const mainUrl = await Storage.upload(BUCKET.logos, pendingLogoMain);
-    const hasVar  = document.getElementById('has-variations').checked;
-    const variations = [];
-
-    if (hasVar) {
-      const slots = document.querySelectorAll('[id^="vslot-"]');
-      for (const slot of slots) {
-        const idx   = slot.id.replace('vslot-','');
-        const vName = document.getElementById(`vname-${idx}`)?.value.trim() || 'Variación';
-        const vFile = variationFiles[idx];
-        if (vFile) {
-          const vUrl = await Storage.upload(BUCKET.logos, vFile);
-          variations.push({ name: vName, image: vUrl });
-        }
-      }
-    }
-
-    await DB.insert('logos', { name, description: desc, main_image: mainUrl, variations });
-    toast('Logo guardado', 'success');
-    document.getElementById('logo-name').value = '';
-    document.getElementById('logo-desc').value = '';
-    document.getElementById('prev-logo-main').innerHTML = '';
-    document.getElementById('variations-list').innerHTML = '';
-    pendingLogoMain = null;
-    loadTable('logos');
-    loadDashboard();
-  } catch (e) { toast(`Error: ${e.message}`, 'error'); }
-}
-
-// ── PDF ───────────────────────────────────────────────────────
-function handlePDF(input) {
-  pendingPDF = input.files[0];
-  if (!pendingPDF) return;
-  const mb = (pendingPDF.size / 1024 / 1024).toFixed(1);
-  document.getElementById('zone-pdfs').querySelector('p').textContent = `Archivo: ${pendingPDF.name} (${mb} MB)`;
-}
-
-async function savePDF() {
-  const slug = document.getElementById('pdf-slug').value.trim();
-  const name = document.getElementById('pdf-name').value.trim();
-  if (!slug || !name || !pendingPDF) { toast('Completa identificador, nombre y selecciona el PDF', 'error'); return; }
-
-  const prog = document.getElementById('prog-pdfs');
-  const fill = document.getElementById('fill-pdfs');
-  if (prog) prog.style.display = 'block';
-  if (fill) fill.style.width = '50%';
-
-  try {
-    const url = await Storage.upload(BUCKET.pdfs, pendingPDF);
-    if (fill) fill.style.width = '90%';
-
-    await DB.insert('pdfs', {
-      slug, name, url,
-      client: document.getElementById('pdf-client').value.trim(),
-      year  : document.getElementById('pdf-year').value  || new Date().getFullYear(),
-      description: document.getElementById('pdf-desc').value.trim(),
-    });
-
-    if (fill) fill.style.width = '100%';
-    setTimeout(() => { if (prog) prog.style.display = 'none'; if (fill) fill.style.width = '0'; }, 800);
-    toast('PDF guardado correctamente', 'success');
-    pendingPDF = null;
-    ['pdf-slug','pdf-name','pdf-client','pdf-year','pdf-desc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    loadPDFList();
-    loadDashboard();
-  } catch (e) { toast(`Error: ${e.message}`, 'error'); }
-}
-
-async function loadPDFList() {
-  const list = document.getElementById('pdf-list');
-  if (!list) return;
-  const rows = await DB.getAll('pdfs');
-  list.innerHTML = rows.length === 0
-    ? '<p style="color:var(--text-3);font-size:.9rem">Sin PDFs cargados aún.</p>'
-    : rows.map(r => `
-      <div class="pdf-row">
-        <div class="pdf-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg></div>
-        <div class="pdf-meta">
-          <div class="pdf-name">${r.name}</div>
-          <div class="pdf-size">${r.slug} · ${r.client || ''} · ${r.year || ''}</div>
-        </div>
-        <span class="pdf-status ok">Activo</span>
-        <button class="btn-del" onclick="deleteRecord('pdfs',${r.id})">Eliminar</button>
-      </div>`).join('');
-}
-
-// ── Drag & drop en upload zones ───────────────────────────────
-document.querySelectorAll('.upload-zone').forEach(zone => {
-  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('dragover');
-    const input = zone.querySelector('input[type=file]');
-    if (!input) return;
-    const dt = new DataTransfer();
-    [...e.dataTransfer.files].forEach(f => dt.items.add(f));
-    input.files = dt.files;
-    input.dispatchEvent(new Event('change'));
-  });
-});
-
-// ── Toast ─────────────────────────────────────────────────────
-function toast(msg, type = 'info') {
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
-}
-</script>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="admin.js"></script>
 </body>
 </html>
