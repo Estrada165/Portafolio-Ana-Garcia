@@ -584,3 +584,50 @@ main,.footer{position:relative;z-index:2}
 .pill{white-space:nowrap}
 @media (max-width:640px){.logo-card{flex:0 0 82%}.logo-meta h3{font-size:1.15rem}}
 @media (max-width:380px){.contact-card{padding:.9rem}.contact-lead{font-size:1.2rem}.panel{padding:1rem}}
+
+/* ============================================================
+   v4.3
+   ============================================================ */
+/* Barra de progreso: un solo color, el del tema */
+.progress{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+
+/* Destacados en filas de tres (la pieza más angosta va al centro) */
+.feat{display:grid;gap:clamp(1rem,2vw,1.6rem);overflow:visible;margin:0;padding:0}
+.feat-row{display:flex;gap:clamp(1rem,2vw,1.6rem);align-items:stretch}
+@media (max-width:699px){
+  .feat{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:calc(var(--pad) * -1);padding:4px var(--pad) 1rem;scroll-padding-inline:var(--pad);scrollbar-width:none}
+  .feat::-webkit-scrollbar{display:none}
+  .feat-row{display:contents}
+}
+
+/* Ventana de logos: encabezado fijo y solo se desplaza el contenido */
+.dialog[open]{display:flex;flex-direction:column;overflow:hidden}
+.dialog-head{position:static;flex:none}
+.variations{flex:1;min-height:0;overflow:auto;padding-top:1.1rem}
+
+/* Pie de página */
+.footer{border-top:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:2.5rem 0 1rem}
+.footer-card{position:relative;overflow:hidden;border-radius:32px;padding:clamp(1.5rem,4vw,3rem) clamp(1.2rem,4vw,3rem) 1.1rem;background:var(--glass);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);box-shadow:inset 0 1px 0 var(--glass-edge),var(--sh)}
+.footer-grid{display:grid;gap:2rem clamp(1.5rem,4vw,3.5rem);grid-template-columns:1.5fr 1fr 1.25fr;align-items:start}
+.footer-brand{display:flex;align-items:center;gap:.9rem}
+.footer-brand img{border-radius:50%;box-shadow:var(--sh)}
+.footer-brand strong{font-family:var(--f-display);font-weight:600;font-size:1.25rem}
+.f-text{color:var(--text-2);max-width:34ch;margin:1rem 0 1.2rem;font-size:.95rem;line-height:1.6}
+.footer-social{display:flex;gap:.5rem}
+.footer-social .icon-btn{width:42px;height:42px;border-color:var(--line);background:var(--glass)}
+.f-col{display:flex;flex-direction:column;gap:.55rem;align-items:flex-start;min-width:0}
+.f-col h3{font-family:var(--f-display);font-weight:600;font-size:1.05rem;margin-bottom:.5rem}
+.f-col a,.f-col span{color:var(--text-2);font-size:.95rem;transition:color .2s;overflow-wrap:anywhere}
+.f-col a:hover{color:var(--text)}
+.f-col .f-cta{margin-top:.7rem;color:var(--bg)}
+.f-col .f-cta:hover{color:#fff}
+.footer-mark{font-family:var(--f-display);font-weight:600;font-size:clamp(3.2rem,15vw,12.5rem);line-height:.85;letter-spacing:-.03em;text-align:center;white-space:nowrap;overflow:hidden;margin:2.4rem 0 0;padding-bottom:.08em;user-select:none;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 60%,transparent) 0%,color-mix(in srgb,var(--accent) 8%,transparent) 80%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;gap:.8rem 1rem;flex-wrap:wrap;margin-top:.8rem;padding-top:1rem;border-top:1px solid var(--line)}
+.footer .copy{padding:0;border:0;font-size:.84rem;color:var(--text-2)}
+.to-top{display:inline-flex;align-items:center;gap:.45rem;padding:.45rem .95rem;border-radius:999px;border:1px solid var(--line);font-size:.86rem;color:var(--text-2);transition:color .2s,background .2s,transform .3s var(--ease)}
+.to-top .i{width:16px;height:16px}
+.to-top:hover{color:var(--text);background:var(--soft);transform:translateY(-2px)}
+@media (max-width:899px){.footer-grid{grid-template-columns:1fr 1fr}.footer-grid>.f-brand{grid-column:1 / -1}}
+@media (max-width:560px){.footer-grid{grid-template-columns:1fr}.footer-card{border-radius:26px}.footer-bottom{justify-content:center;text-align:center}}

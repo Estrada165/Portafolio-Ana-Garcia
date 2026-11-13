@@ -223,26 +223,39 @@
 
 <footer class="footer">
   <div class="container">
-    <div class="footer-top">
-      <a href="#inicio" class="footer-brand" aria-label="Ana García, ir al inicio">
-        <img src="imagenes/logo.png" alt="" width="44" height="44">
-        <div><strong>Ana Lucía García Lachira</strong><span>Diseñadora gráfica digital</span></div>
-      </a>
-      <nav class="footer-nav" aria-label="Pie de página">
-        <a href="#sobre-mi">Sobre mí</a>
-        <a href="#destacados">Destacados</a>
-        <a href="#galeria">Galería</a>
-        <a href="#logos">Logos</a>
-        <a href="#guias">Guías</a>
-        <a href="#contacto">Contacto</a>
-      </nav>
-    </div>
-    <div class="footer-bottom">
-      <p class="copy">&copy; <span id="year">2026</span> Ana Lucía García Lachira. Todos los derechos reservados.</p>
-      <div class="footer-social">
-        <a id="fMail" class="icon-btn" href="mailto:agarcialachira@gmail.com" aria-label="Escribir por correo"><svg class="i"><use href="#i-mail"/></svg></a>
-        <a id="fWa" class="icon-btn" href="https://wa.me/51977575523" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp"><svg class="i"><use href="#i-chat"/></svg></a>
-        <a href="#inicio" class="icon-btn up" aria-label="Volver arriba"><svg class="i"><use href="#i-up"/></svg></a>
+    <div class="footer-card">
+      <div class="footer-grid">
+        <div class="f-brand">
+          <a href="#inicio" class="footer-brand" aria-label="Ana García, ir al inicio">
+            <img src="imagenes/logo.png" alt="" width="52" height="52">
+            <div><strong>Ana Lucía García Lachira</strong><span>Diseñadora gráfica digital</span></div>
+          </a>
+          <p class="f-text">Identidades, mockups e ilustraciones hechas con cuidado, desde Piura para cualquier lugar.</p>
+          <div class="footer-social">
+            <a id="fMail" class="icon-btn" href="mailto:agarcialachira@gmail.com" aria-label="Escribir por correo"><svg class="i"><use href="#i-mail"/></svg></a>
+            <a id="fWa" class="icon-btn" href="https://wa.me/51977575523" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp"><svg class="i"><use href="#i-chat"/></svg></a>
+          </div>
+        </div>
+        <nav class="f-col" aria-label="Pie de página">
+          <h3>Explorar</h3>
+          <a href="#sobre-mi">Sobre mí</a>
+          <a href="#destacados">Destacados</a>
+          <a href="#galeria">Galería</a>
+          <a href="#logos">Logos</a>
+          <a href="#guias">Guías</a>
+        </nav>
+        <div class="f-col">
+          <h3>Contacto</h3>
+          <a id="fMailT" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a>
+          <a id="fWaT" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a>
+          <span>Piura, Perú</span>
+          <a href="#contacto" class="btn btn-sm f-cta">Escríbeme</a>
+        </div>
+      </div>
+      <div class="footer-mark" aria-hidden="true">Ana García</div>
+      <div class="footer-bottom">
+        <p class="copy">&copy; <span id="year">2026</span> Ana Lucía García Lachira. Todos los derechos reservados.</p>
+        <a href="#inicio" class="to-top">Volver arriba <svg class="i"><use href="#i-up"/></svg></a>
       </div>
     </div>
   </div>
@@ -253,13 +266,6 @@
   <div class="dialog-head">
     <div><h3 id="logoDialogTitle"></h3><p id="logoDialogDesc"></p></div>
     <button class="icon-btn" id="logoDialogClose" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
-  </div>
-  <div class="bg-switch" role="group" aria-label="Fondo de la vista previa">
-    <span>Fondo</span>
-    <button data-bg="auto" aria-pressed="true">Auto</button>
-    <button data-bg="light" aria-pressed="false">Claro</button>
-    <button data-bg="dark" aria-pressed="false">Oscuro</button>
-    <button data-bg="check" aria-pressed="false">Transparente</button>
   </div>
   <div class="variations" id="variations"></div>
 </dialog>

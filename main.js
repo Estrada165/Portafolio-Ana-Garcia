@@ -283,10 +283,28 @@
   const ratioOf = it => it.width && it.height ? clamp(it.width / it.height, .5, 2.4) : null;
 
   /* ── Destacados ────────────────────────────────────────────── */
-  function renderFeatured(items) {
+  /* Cada fila de 3: la pieza más angosta va al centro y las más anchas a los lados.
+     Con orden manual (settings.featured.auto_center = false) se respeta el orden del panel. */
+  function arrangeFeatured(items, auto) {
+    if (!auto) return items;
+    const out = [];
+    for (let k = 0; k < items.length; k += 3) {
+      const g = items.slice(k, k + 3);
+      if (g.length < 3) { out.push(...g); continue; }
+      const r = it => it.width && it.height ? it.width / it.height : 1;
+      const mid = g.reduce((m, it, n) => r(it) < r(g[m]) ? n : m, 0);
+      const rest = g.filter((_, n) => n !== mid);
+      out.push(rest[0], g[mid], rest[1]);
+    }
+    return out;
+  }
+
+  function renderFeatured(items, auto = true) {
     if (!items.length) return hideSection('destacados');
-    items = withAlt(items, 'Proyecto destacado'); GROUPS.featured = items;
-    $('#featuredGrid').innerHTML = items.map((it, i) => `
+    items = withAlt(items, 'Proyecto destacado');
+    items = arrangeFeatured(items, auto);
+    GROUPS.featured = items;
+    const card = (it, i) => `
       <article class="feat-card" style="--ar:${(ratioOf(it) ? clamp(it.width / it.height, .6, 1.7) : 1).toFixed(4)}">
         <button class="feat-media" data-v="featured" data-i="${i}" aria-label="Ampliar ${esc(it.alt)}">
           <img src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
@@ -296,7 +314,9 @@
           ${it.desc ? `<p>${esc(it.desc)}</p>` : ''}
           ${it.tags?.length ? `<p class="feat-tags">${it.tags.map(t => `<span>${esc(t)}</span>`).join('')}</p>` : ''}
         </div>
-      </article>`).join('');
+      </article>`;
+    const rows = []; for (let k = 0; k < items.length; k += 3) rows.push(items.slice(k, k + 3).map((it, n) => card(it, k + n)).join(''));
+    $('#featuredGrid').innerHTML = rows.map(r => `<div class="feat-row">${r}</div>`).join('');
   }
 
   /* ── Galería: filas justificadas que respetan cada proporción ─ */
@@ -437,7 +457,8 @@
 
   const dlg = $('#logoDialog');
   const BG = { light: '#F4F2EE', dark: '#0A0A0C' };
-  let curLogo = null, bgMode = 'auto';
+  let curLogo = null;
+  const bgMode = 'auto';
   const isLightVar = lbl => /blanc|white|claro|negativ/i.test(lbl);          // variante para fondos oscuros
 
   function paintVariations() {
@@ -450,7 +471,6 @@
         <button class="v-img" data-v="vars" data-i="${n}" aria-label="Ampliar ${esc(v.label)}"><img src="${esc(v.src)}" alt="${esc(l.title)}, ${esc(v.label)}" loading="lazy" decoding="async"></button>
         <figcaption>${esc(v.label)}</figcaption>
       </figure>`).join('');
-    $$('.bg-switch button').forEach(b => b.setAttribute('aria-pressed', b.dataset.bg === bgMode));
   }
   const modeOf = v => bgMode === 'auto' ? ((v.light ?? isLightVar(v.label)) ? 'dark' : 'light') : bgMode;
 
@@ -459,12 +479,11 @@
     const l = LOGOS[+b.dataset.logo]; if (!l) return;
     const cards = [{ label: 'Principal', src: l.src }];
     l.variations.forEach(v => { if (v.image_url !== l.src) cards.push({ label: v.label || 'Variación', src: v.image_url }); });
-    curLogo = { ...l, cards }; bgMode = 'auto';
+    curLogo = { ...l, cards };
     $('#logoDialogTitle').textContent = l.title; $('#logoDialogDesc').textContent = l.desc || `${cards.length} ${cards.length === 1 ? 'versión' : 'versiones'}`;
     Promise.all(cards.map(c => isLightImg(c.src).then(f => { c.light = f; }))).then(() => { if (curLogo?.cards === cards || curLogo) paintVariations(); });
     paintVariations(); dlg.showModal();
   });
-  $('.bg-switch').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { bgMode = b.dataset.bg; paintVariations(); } });
   $('#logoDialogClose').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
   // El visor se abre por encima: se cierra el diálogo antes y se vuelve a abrir al cerrar el visor
@@ -583,11 +602,12 @@
     const fmt = wa.startsWith('51') && wa.length === 11 ? `+51 ${wa.slice(2, 5)} ${wa.slice(5, 8)} ${wa.slice(8)}` : `+${wa}`;
     $('#cWhats').href = `https://wa.me/${wa}`; $('#cWhats').textContent = fmt;
     $('#cWhatsBtn').href = `https://wa.me/${wa}?text=${encodeURIComponent('Hola Ana Lucía, me interesa trabajar contigo')}`;
-    $('#fWa').href = `https://wa.me/${wa}`;
-    if (contact.email) { $('#fMail').href = `mailto:${contact.email}`; }
+    $('#fWa').href = `https://wa.me/${wa}`; $('#fWaT').href = `https://wa.me/${wa}`; $('#fWaT').textContent = fmt;
+    if (contact.email) { $('#fMail').href = `mailto:${contact.email}`; $('#fMailT').href = `mailto:${contact.email}`; $('#fMailT').textContent = contact.email; }
     if (contact.email) { $('#cEmail').href = `mailto:${contact.email}`; $('#cEmail').textContent = contact.email; }
     if (contact.instagram) {
       const u = String(contact.instagram).replace(/^@/, '').replace(/[^\w.]/g, '');
+      if (u) $('.footer-social').insertAdjacentHTML('beforeend', `<a class="icon-btn" href="https://instagram.com/${u}" target="_blank" rel="noopener" aria-label="Instagram">${icon('insta')}</a>`);
       if (u) $('.contact-list').insertAdjacentHTML('beforeend', `<li>${icon('insta')}<a href="https://instagram.com/${u}" target="_blank" rel="noopener">@${u}</a></li>`);
     }
     $('#contactForm').addEventListener('submit', e => {
@@ -683,7 +703,7 @@
     });
     const run = (id, fn) => { if (!off.has(id)) fn(); };
 
-    run('destacados', () => renderFeatured(data.featured));
+    run('destacados', () => renderFeatured(data.featured, settings.featured?.auto_center !== false));
     run('galeria', () => renderGallery(data));
     run('logos', () => renderLogos(data.logos));
     run('guias', () => renderGuides(docs));
