@@ -127,6 +127,7 @@
       this.reset(false);
       this.el.classList.add('loading');
       this.img.alt = it.alt || it.title || '';
+      this.el.dataset.bg = it.bg || '';
       if (it.thumb && it.thumb !== it.src) { this.img.style.opacity = 1; this.img.src = it.thumb; }
       else this.img.style.opacity = 0;
       const full = new Image();
@@ -153,6 +154,7 @@
       document.body.classList.remove('no-scroll');
       this.bg().forEach(n => n.removeAttribute('inert'));
       this.opener?.focus?.({ preventScroll: true });
+      if (this.reopen) { const d = this.reopen; this.reopen = null; d.showModal(); }
     },
 
     reset(animate = true) { this.s = 1; this.tx = this.ty = 0; this.apply(animate); },
@@ -285,10 +287,9 @@
     if (!items.length) return hideSection('destacados');
     items = withAlt(items, 'Proyecto destacado'); GROUPS.featured = items;
     $('#featuredGrid').innerHTML = items.map((it, i) => `
-      <article class="feat-card">
+      <article class="feat-card" style="--ar:${(ratioOf(it) ? clamp(it.width / it.height, .6, 1.7) : 1).toFixed(4)}">
         <button class="feat-media" data-v="featured" data-i="${i}" aria-label="Ampliar ${esc(it.alt)}">
-          <img class="bgi" src="${esc(it.thumb || it.src)}" alt="" aria-hidden="true" loading="lazy" decoding="async">
-          <img class="fg" src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
+          <img src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
         </button>
         <div class="feat-text">
           ${it.title ? `<h3>${esc(it.title)}</h3>` : ''}
@@ -398,6 +399,25 @@
   }
 
   /* ── Logos ─────────────────────────────────────────────────── */
+  /* ¿El archivo es casi todo claro (ej. logo blanco)? Sirve para elegir un fondo oscuro automáticamente */
+  const lightCache = new Map();
+  function isLightImg(url) {
+    if (!lightCache.has(url)) lightCache.set(url, new Promise(res => {
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        try {
+          const c = document.createElement('canvas'); c.width = c.height = 40;
+          const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0, 40, 40);
+          const d = g.getImageData(0, 0, 40, 40).data; let n = 0, sum = 0;
+          for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 40) { n++; sum += (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255; }
+          res(n > 30 ? sum / n > 0.8 : null);
+        } catch { res(null); }
+      };
+      im.onerror = () => res(null); im.src = url;
+    }));
+    return lightCache.get(url);
+  }
+
   let LOGOS = [];
   function renderLogos(items) {
     if (!items.length) return hideSection('logos');
@@ -412,26 +432,43 @@
           ${n > 1 ? `<button class="pill" data-logo="${i}">${icon('grid')} ${n} variaciones</button>` : ''}
         </div></article>`;
     }).join('');
+    $$('.logo-tile').forEach((t, i) => isLightImg(LOGOS[i].src).then(f => t.classList.toggle('on-dark', f === true)));
   }
 
   const dlg = $('#logoDialog');
+  const BG = { light: '#F4F2EE', dark: '#0A0A0C' };
+  let curLogo = null, bgMode = 'auto';
+  const isLightVar = lbl => /blanc|white|claro|negativ/i.test(lbl);          // variante para fondos oscuros
+
+  function paintVariations() {
+    const l = curLogo; if (!l) return;
+    const cards = l.cards;
+    GROUPS.vars = cards.map(v => ({ src: v.src, title: `${l.title}, ${v.label}`, alt: `${l.title}, ${v.label}`, bg: modeOf(v) }));
+    $('#variations').className = `variations bg-${bgMode}`;
+    $('#variations').innerHTML = cards.map((v, n) => `
+      <figure class="v-card m-${modeOf(v)}">
+        <button class="v-img" data-v="vars" data-i="${n}" aria-label="Ampliar ${esc(v.label)}"><img src="${esc(v.src)}" alt="${esc(l.title)}, ${esc(v.label)}" loading="lazy" decoding="async"></button>
+        <figcaption>${esc(v.label)}</figcaption>
+      </figure>`).join('');
+    $$('.bg-switch button').forEach(b => b.setAttribute('aria-pressed', b.dataset.bg === bgMode));
+  }
+  const modeOf = v => bgMode === 'auto' ? ((v.light ?? isLightVar(v.label)) ? 'dark' : 'light') : bgMode;
+
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-logo]'); if (!b) return;
     const l = LOGOS[+b.dataset.logo]; if (!l) return;
-    if (l.variations.length < 2) { GROUPS.logo = [{ src: l.src, title: l.title, alt: l.alt }]; return V.open(GROUPS.logo, 0, b); }
-    $('#logoDialogTitle').textContent = l.title; $('#logoDialogDesc').textContent = l.desc;
-    GROUPS.vars = l.variations.map(v => ({ src: v.image_url, title: `${l.title}, ${v.label}`, alt: `${l.title}, ${v.label}` }));
-    $('#variations').innerHTML = l.variations.map((v, n) => `
-      <figure class="v-card${/blanc|white|claro|negativ/i.test(v.label) ? ' on-dark' : ''}">
-        <button class="v-img" data-v="vars" data-i="${n}" aria-label="Ampliar ${esc(v.label)}"><img src="${esc(v.image_url)}" alt="${esc(l.title)}, ${esc(v.label)}" loading="lazy" decoding="async"></button>
-        <figcaption>${esc(v.label)}</figcaption>
-      </figure>`).join('');
-    dlg.showModal();
+    const cards = [{ label: 'Principal', src: l.src }];
+    l.variations.forEach(v => { if (v.image_url !== l.src) cards.push({ label: v.label || 'Variación', src: v.image_url }); });
+    curLogo = { ...l, cards }; bgMode = 'auto';
+    $('#logoDialogTitle').textContent = l.title; $('#logoDialogDesc').textContent = l.desc || `${cards.length} ${cards.length === 1 ? 'versión' : 'versiones'}`;
+    Promise.all(cards.map(c => isLightImg(c.src).then(f => { c.light = f; }))).then(() => { if (curLogo?.cards === cards || curLogo) paintVariations(); });
+    paintVariations(); dlg.showModal();
   });
+  $('.bg-switch').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { bgMode = b.dataset.bg; paintVariations(); } });
   $('#logoDialogClose').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
-  // El visor se abre sobre el diálogo (que está en la capa superior): lo cerramos antes
-  document.addEventListener('click', e => { if (e.target.closest('#variations [data-v]') && dlg.open) dlg.close(); }, true);
+  // El visor se abre por encima: se cierra el diálogo antes y se vuelve a abrir al cerrar el visor
+  document.addEventListener('click', e => { if (e.target.closest('#variations [data-v]') && dlg.open) { V.reopen = dlg; dlg.close(); } }, true);
 
   /* ── Guías: páginas WebP bajo demanda ──────────────────────── */
   const pagesCache = new Map();
@@ -491,18 +528,25 @@
     $('#year').textContent = new Date().getFullYear();
     const root = document.documentElement, meta = $('meta[name="theme-color"]');
 
-    const setTheme = t => {
+    const setTheme = (t, x, y) => {
       const apply = () => { root.setAttribute('data-theme', t); store.set('ag_theme', t); meta?.setAttribute('content', t === 'dark' ? '#070608' : '#FAF9F7'); };
       if (reduceMotion) return apply();
-      if (document.startViewTransition) {                 // fundido cruzado suave
-        const vt = document.startViewTransition(apply);
+      if (document.startViewTransition && CSS.supports?.('mask-image', 'radial-gradient(circle at 10px 10px,#000,transparent)')) {
+        const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 160;
+        root.style.setProperty('--vx', `${x}px`); root.style.setProperty('--vy', `${y}px`);
+        const vt = document.startViewTransition(apply);                 // gota que se expande con borde difuso
+        vt.ready.then(() => root.animate({ '--vr': ['0px', `${r}px`] },
+          { duration: 1150, easing: 'cubic-bezier(.45,.05,.25,1)', pseudoElement: '::view-transition-new(root)' })).catch(() => {});
         vt.finished.catch(() => {});
       } else {
         root.classList.add('theme-fade'); apply();
         setTimeout(() => root.classList.remove('theme-fade'), 800);
       }
     };
-    $('#themeToggle').addEventListener('click', () => setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+    $('#themeToggle').addEventListener('click', e => {
+      const b = e.currentTarget.getBoundingClientRect();
+      setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', b.left + b.width / 2, b.top + b.height / 2);
+    });
 
     const burger = $('#burger'), menu = $('#menu');
     const setMenu = open => { menu.hidden = !open; burger.setAttribute('aria-expanded', open); burger.classList.toggle('open', open); document.body.classList.toggle('no-scroll', open); };
@@ -559,11 +603,78 @@
     });
   }
 
+  /* ── Desplegables con estilo propio (cualquier <select>) ───── */
+  function enhanceSelects(scope = document) {
+    $$('select:not([data-enhanced])', scope).forEach(sel => {
+      sel.dataset.enhanced = '1';
+      const wrap = document.createElement('div'); wrap.className = 'sel';
+      sel.parentNode.insertBefore(wrap, sel); wrap.appendChild(sel);
+      sel.classList.add('sel-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'sel-btn';
+      btn.setAttribute('aria-haspopup', 'listbox'); btn.setAttribute('aria-expanded', 'false');
+      const list = document.createElement('ul'); list.className = 'sel-list'; list.setAttribute('role', 'listbox'); list.hidden = true;
+      wrap.append(btn, list);
+      let active = -1;
+      const opts = [...sel.options];
+      list.innerHTML = opts.map((o, i) => `<li role="option" data-i="${i}"${o.value === '' ? ' class="ph"' : ''}>${esc(o.textContent)}</li>`).join('');
+      const items = $$('li', list);
+      const sync = () => {
+        const o = sel.options[sel.selectedIndex];
+        btn.innerHTML = `<span class="${sel.value === '' ? 'ph' : ''}">${esc(o ? o.textContent : '')}</span>${icon('down')}`;
+        items.forEach((li, i) => li.setAttribute('aria-selected', i === sel.selectedIndex));
+      };
+      const mark = i => { active = clamp(i, 0, items.length - 1); items.forEach((li, k) => li.classList.toggle('on', k === active)); const li = items[active]; if (li) { if (li.offsetTop < list.scrollTop) list.scrollTop = li.offsetTop - 6; else if (li.offsetTop + li.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = li.offsetTop + li.offsetHeight - list.clientHeight + 6; } };
+      const open = () => {
+        wrap.classList.toggle('up', btn.getBoundingClientRect().bottom + 280 > innerHeight && btn.getBoundingClientRect().top > 300);
+        list.hidden = false; btn.setAttribute('aria-expanded', 'true'); wrap.classList.add('open'); mark(Math.max(0, sel.selectedIndex));
+      };
+      const close = () => { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); wrap.classList.remove('open'); };
+      const pick = i => { sel.selectedIndex = i; sel.dispatchEvent(new Event('change', { bubbles: true })); sync(); close(); btn.focus(); };
+      btn.addEventListener('click', () => list.hidden ? open() : close());
+      list.addEventListener('click', e => { const li = e.target.closest('li'); if (li) pick(+li.dataset.i); });
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { if (!list.hidden) { e.preventDefault(); close(); } return; }
+        if (['ArrowDown', 'ArrowUp', 'Enter', ' ', 'Home', 'End'].includes(e.key)) e.preventDefault(); else return;
+        if (list.hidden) return open();
+        if (e.key === 'ArrowDown') mark(active + 1); else if (e.key === 'ArrowUp') mark(active - 1);
+        else if (e.key === 'Home') mark(0); else if (e.key === 'End') mark(items.length - 1);
+        else pick(active);
+      });
+      document.addEventListener('pointerdown', e => { if (!wrap.contains(e.target)) close(); });
+      sel.addEventListener('focus', () => btn.focus());
+      sel.form?.addEventListener('reset', () => setTimeout(sync));
+      sync();
+    });
+  }
+
+  /* ── Textos editables desde el panel (site_settings) ────────── */
+  const TOOL_PRESETS = { ps: ['Ps', '#001E36', '#31A8FF'], ai: ['Ai', '#330000', '#FF9A00'], ae: ['Ae', '#00005B', '#D291FF'], id: ['Id', '#49021F', '#FF3366'] };
+  const toolBadge = t => {
+    const p = TOOL_PRESETS[String(t.preset || '').toLowerCase()];
+    const abbr = esc(String(t.abbr || p?.[0] || String(t.name || '?').slice(0, 2)).slice(0, 2));
+    const bg = okColor(t.bg) || p?.[1] || '#2A1B4D', fg = okColor(t.fg) || p?.[2] || '#C4B5FD';
+    return `<svg class="ti" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="${bg}"/><text x="14" y="19.2" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="13" fill="${fg}">${abbr}</text></svg>`;
+  };
+  const ICONS = new Set(['ads', 'pen', 'mock', 'shapes', 'grid', 'mail', 'chat', 'pin', 'insta', 'plus']);
+  function applyContent(st) {
+    if (st.hero?.lead) $('.hero-lead').textContent = String(st.hero.lead).slice(0, 220);
+    const a = st.about; if (!a) return;
+    if (a.title) $('.about-main h2').textContent = String(a.title).slice(0, 60);
+    if (a.lead) $('.about-lead').textContent = String(a.lead).slice(0, 700);
+    if (a.show_facts === false) $('#aboutFacts').hidden = true;
+    if (a.areas_title) $$('.panel h3')[0].textContent = String(a.areas_title).slice(0, 60);
+    if (a.tools_title) $$('.panel h3')[1].textContent = String(a.tools_title).slice(0, 60);
+    if (Array.isArray(a.areas) && a.areas.length)
+      $('.areas').innerHTML = a.areas.slice(0, 8).map(x => `<li><span class="ico">${icon(ICONS.has(x.icon) ? x.icon : 'shapes')}</span><div><strong>${esc(x.title)}</strong>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</div></li>`).join('');
+    if (Array.isArray(a.tools) && a.tools.length)
+      $('.tools').innerHTML = a.tools.slice(0, 12).map(t => `<li>${toolBadge(t)}${esc(t.name)}</li>`).join('');
+  }
+
   /* ── Arranque ──────────────────────────────────────────────── */
   async function init() {
     setupUI();
     const { data, docs, settings } = await loadAll();
-    applyTheme(settings.theme);
+    applyTheme(settings.theme); applyContent(settings); enhanceSelects();
 
     const off = new Set();
     (Array.isArray(settings.sections) ? settings.sections : []).forEach(s => {

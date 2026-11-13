@@ -37,6 +37,7 @@
     <symbol id="i-left" viewBox="0 0 24 24"><path d="M14.5 5 7.5 12l7 7"/></symbol>
     <symbol id="i-right" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/></symbol>
     <symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="10.500" cy="10.500" r="6"/><path d="M15 15l5 5M10.500 8v5M8 10.500h5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9.500l6 6 6-6"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
     <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
@@ -252,6 +253,13 @@
   <div class="dialog-head">
     <div><h3 id="logoDialogTitle"></h3><p id="logoDialogDesc"></p></div>
     <button class="icon-btn" id="logoDialogClose" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="bg-switch" role="group" aria-label="Fondo de la vista previa">
+    <span>Fondo</span>
+    <button data-bg="auto" aria-pressed="true">Auto</button>
+    <button data-bg="light" aria-pressed="false">Claro</button>
+    <button data-bg="dark" aria-pressed="false">Oscuro</button>
+    <button data-bg="check" aria-pressed="false">Transparente</button>
   </div>
   <div class="variations" id="variations"></div>
 </dialog>
