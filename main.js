@@ -502,7 +502,7 @@
     const sec = $('#guias');
     if (!docs.length) return hideSection('guias');
     sec.hidden = false;
-    const meta = d => [d.page_count ? `${d.page_count} páginas` : 'PDF', d.client, d.year].filter(Boolean).join('  ');
+    const meta = d => [d.page_count ? `${d.page_count} páginas` : 'PDF', d.client, d.year].filter(Boolean).join(' · ');
     $('#guides').innerHTML = `
       <div class="g-list" role="tablist" aria-label="Guías disponibles">
         ${docs.map((d, i) => `<button class="g-tab" role="tab" aria-selected="${i === 0}" data-doc="${i}">
@@ -526,26 +526,73 @@
     const link = doc.source_url ? `<a class="btn btn-line btn-sm" href="${esc(doc.source_url)}" target="_blank" rel="noopener">${icon('external')} Abrir PDF</a>` : '';
     if (!doc.page_count) { stage.innerHTML = head(link) + '<p class="empty">Esta guía está disponible como archivo PDF.</p>'; return; }
 
-    stage.innerHTML = head() + `<div class="pages" aria-hidden="true">${'<div class="skeleton" style="width:200px"></div>'.repeat(4)}</div>`;
+    stage.innerHTML = head() + '<div class="reader"><div class="rd-page skeleton" aria-hidden="true"></div></div>';
     const pages = await getPages(doc);
     if (token !== stage._t) return;                       // cambió de guía mientras cargaba
     if (!pages.length) { stage.innerHTML = head(link) + '<p class="empty">No se pudieron cargar las páginas. Inténtalo de nuevo en un momento.</p>'; return; }
 
-    const items = pages.map((p, i) => ({ src: p.image_url, thumb: p.thumb_url, title: doc.title, desc: `Página ${i + 1} de ${pages.length}`, alt: `${doc.title}, página ${i + 1}` }));
-    GROUPS[`doc-${doc.id}`] = items;
-    const SHOW = 10, more = pages.length - SHOW;
-    stage.innerHTML = head(`<button class="btn btn-sm" data-v="doc-${esc(doc.id)}" data-i="0">${icon('plus')} Abrir guía</button>`) + `
-      <div class="pages">
-        ${pages.slice(0, SHOW).map((p, i) => `<button class="pg" data-v="doc-${esc(doc.id)}" data-i="${i}" data-cursor="Ver" aria-label="Página ${i + 1}">
-          <img src="${esc(p.thumb_url || p.image_url)}" alt=""${dims(p)} loading="lazy" decoding="async"><b>${i + 1}</b></button>`).join('')}
-        ${more > 0 ? `<button class="pg pg-more" data-v="doc-${esc(doc.id)}" data-i="${SHOW}">+${more} páginas</button>` : ''}
-      </div>`;
+    const key = `doc-${doc.id}`, n = pages.length;
+    GROUPS[key] = pages.map((p, i) => ({ src: p.image_url, thumb: p.thumb_url, title: doc.title, desc: `Página ${i + 1} de ${n}`, alt: `${doc.title}, página ${i + 1}` }));
+    stage.innerHTML = head(`<button class="btn btn-sm" id="rdOpen" data-v="${esc(key)}" data-i="0">${icon('plus')} Abrir guía</button>`) + `
+      <div class="reader" tabindex="0" aria-label="Páginas de ${esc(doc.title)}. Usa las flechas del teclado para avanzar.">
+        <button class="rd-page" id="rdPage" data-v="${esc(key)}" data-i="0" data-cursor="Ver"><img id="rdImg" alt="" decoding="async"></button>
+      </div>
+      <div class="rd-bar">
+        <button class="rd-btn" id="rdPrev" aria-label="Página anterior">${icon('left')}</button>
+        <span class="rd-count" id="rdCount" aria-live="polite"></span>
+        <button class="rd-btn" id="rdNext" aria-label="Página siguiente">${icon('right')}</button>
+      </div>
+      <div class="rd-thumbs" id="rdThumbs" role="list">${pages.map((p, i) => `<button class="rt" role="listitem" data-p="${i}" aria-label="Ir a la página ${i + 1}"><img src="${esc(p.thumb_url || p.image_url)}" alt=""${dims(p)} loading="lazy" decoding="async"></button>`).join('')}</div>`;
+
+    const img = $('#rdImg'), pg = $('#rdPage'), strip = $('#rdThumbs'), thumbs = $$('.rt', strip);
+    let cur = -1, swiped = false;
+    const show = (k, first) => {
+      k = clamp(k, 0, n - 1); if (k === cur) return; cur = k;
+      const p = pages[k];
+      pg.dataset.i = k; $('#rdOpen').dataset.i = k;
+      $('#rdCount').textContent = `${k + 1} / ${n}`;
+      $('#rdPrev').disabled = k === 0; $('#rdNext').disabled = k === n - 1;
+      thumbs.forEach((b, i) => b.setAttribute('aria-current', i === k));
+      const b = thumbs[k]; strip.scrollTo({ left: b.offsetLeft - strip.clientWidth / 2 + b.offsetWidth / 2, behavior: first || reduceMotion ? 'auto' : 'smooth' });
+      img.alt = `${doc.title}, página ${k + 1}`;
+      if (p.width && p.height) { img.width = p.width; img.height = p.height; }
+      const full = new Image();                           // se muestra la página en alta calidad cuando termina de cargar
+      full.onload = () => { if (cur === k) { img.src = p.image_url; img.classList.remove('swap'); void img.offsetWidth; img.classList.add('swap'); } };
+      full.src = p.image_url;
+      if (first) img.src = p.thumb_url || p.image_url;
+      if (pages[k + 1]) new Image().src = pages[k + 1].image_url;
+    };
+    show(0, true);
+    $('#rdPrev').addEventListener('click', () => show(cur - 1));
+    $('#rdNext').addEventListener('click', () => show(cur + 1));
+    strip.addEventListener('click', e => { const b = e.target.closest('.rt'); if (b) show(+b.dataset.p); });
+    $('.reader', stage).addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); show(cur - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); show(cur + 1); } });
+    let x0 = null;                                        // deslizar con el dedo para cambiar de página
+    pg.addEventListener('pointerdown', e => { x0 = e.clientX; swiped = false; });
+    pg.addEventListener('pointerup', e => { if (x0 !== null && Math.abs(e.clientX - x0) > 50) { swiped = true; show(cur + (e.clientX < x0 ? 1 : -1)); } x0 = null; });
+    pg.addEventListener('click', e => { if (swiped) { e.stopImmediatePropagation(); e.preventDefault(); swiped = false; } }, true);
   }
 
   const TINT = { inicio: 'a', destacados: 'b', galeria: 'c', logos: 'd', guias: 'e', 'sobre-mi': 'f', contacto: 'g' };
 
+  /* ── Recordar dónde estabas al recargar ──────────────────────── */
+  const pos = { track: false };
+  function restorePosition() {
+    const id = decodeURIComponent(location.hash.slice(1));
+    const t = id && document.getElementById(id);
+    if (!t || t.hidden) { pos.track = true; return; }
+    let stop = false; const cancel = () => { stop = true; };
+    ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach(ev => addEventListener(ev, cancel, { once: true, passive: true }));
+    const go = () => { if (!stop) scrollTo({ top: Math.max(0, t.getBoundingClientRect().top + scrollY - 80), behavior: 'instant' }); };
+    go();                                                  // el contenido sigue cargando: se reajusta hasta que todo se asienta
+    addEventListener('load', go, { once: true });
+    [300, 800, 1600].forEach(ms => setTimeout(go, ms));
+    setTimeout(() => { pos.track = true; }, 1800);
+  }
+
   /* ── Navegación, tema y scroll ─────────────────────────────── */
   function setupUI() {
+    try { history.scrollRestoration = 'manual'; } catch { /* navegador antiguo */ }
     $('#year').textContent = new Date().getFullYear();
     const root = document.documentElement, meta = $('meta[name="theme-color"]');
 
@@ -593,6 +640,7 @@
       if (!en.isIntersecting) return;
       links.forEach(a => a.classList.toggle('active', a.dataset.s === en.target.id));
       root.dataset.tint = TINT[en.target.id] || 'a';          // el fondo cambia de tonos al avanzar
+      if (pos.track) { try { history.replaceState(null, '', en.target.id === 'inicio' ? location.pathname + location.search : '#' + en.target.id); } catch { /* sin historial */ } }
     }), { rootMargin: '-45% 0px -50% 0px' });
     $$('main > section[id]').forEach(s => spy.observe(s));
 
@@ -710,6 +758,7 @@
     run('logos', () => renderLogos(data.logos));
     run('guias', () => renderGuides(docs));
     setupContact(settings.contact);
+    restorePosition();
   }
   init();
 })();
