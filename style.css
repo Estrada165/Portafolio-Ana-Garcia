@@ -1058,3 +1058,10 @@ html[data-theme="dark"] .gv-frame{border:1px solid rgba(255,255,255,.18)}
 .justified.jcar .tile .bd{display:none!important}
 .justified.jcar .tile img{object-fit:cover!important}
 .justified.jcar .tile{background:var(--soft)}
+
+/* v5.6 · logos: contornos más visibles en claro y oscuro */
+.logo-card{border:1.5px solid color-mix(in srgb,var(--accent) 38%,rgba(30,27,24,.22))!important}
+.logo-tile{outline:1.5px solid color-mix(in srgb,var(--accent) 28%,rgba(30,27,24,.2))!important;outline-offset:-1.5px}
+html[data-theme="dark"] .logo-card{border:1.5px solid rgba(255,255,255,.3)!important}
+html[data-theme="dark"] .logo-tile{outline:1.5px solid rgba(255,255,255,.34)!important;box-shadow:0 0 0 1px rgba(255,255,255,.06),var(--sh)}
+html[data-theme="dark"] .logo-tile:not(.on-dark){background:#EDEBE8}
