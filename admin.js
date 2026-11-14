@@ -322,6 +322,7 @@
   async function run(fn, errCtx) { try { return await fn(); } catch (e) { fail(e, errCtx); } }
 
   /* ══ RESUMEN ═════════════════════════════════════════════════ */
+  const siteUrl = () => location.origin + location.pathname.replace(/[^/]*$/, '');
   function renderHome() {
     const el = $('#v-home'), pending = localPending();
     const cnt = k => worksOf(k).length + localItems(k).length;
@@ -339,10 +340,21 @@
         ${KINDS.map(k => `<button class="stat" data-go="works" data-kind="${k.id}"><span class="ico">${ic(k.id === 'featured' ? 'star' : k.id === 'logo' ? 'palette' : 'image')}</span><div><strong>${cnt(k.id)}</strong><span>${k.label}</span></div></button>`).join('')}
         <button class="stat" data-go="pdf"><span class="ico">${ic('doc')}</span><div><strong>${S.docs.length}</strong><span>Guías PDF</span></div></button>
       </div>
+      <div class="card share"><h3>Compartir mi portafolio</h3>
+        <div class="share-in"><img src="icons/og-image.png" alt="" loading="lazy">
+          <div><p class="hint" style="margin:0 0 .6rem;color:var(--text-2);font-size:.88rem">Así se ve tu enlace cuando lo mandas por WhatsApp o redes. Solo copia y pega.</p>
+            <input class="in" id="shUrl" readonly value="${esc(siteUrl())}" aria-label="Enlace del portafolio">
+            <div class="share-btns"><button class="btn primary sm" data-copy="url">${ic('external')}Copiar enlace</button><button class="btn sm" data-copy="msg">Copiar mensaje listo</button><a class="btn sm" href="${esc(siteUrl())}" target="_blank" rel="noopener">Abrir</a></div></div></div></div>
       <div class="card"><h3>Estado del sitio</h3><ul class="todo">
         ${items.map(([good, t]) => `<li><span class="dot ${good ? 'ok' : ''}">${good ? ic('check') : ''}</span><span>${t}</span></li>`).join('')}
       </ul></div>`;
-    el.onclick = e => {
+    el.onclick = async e => {
+      const cp = e.target.closest('[data-copy]');
+      if (cp) {
+        const txt = cp.dataset.copy === 'url' ? siteUrl() : `Hola 👋 te comparto mi portafolio de diseño gráfico: ${siteUrl()}`;
+        try { await navigator.clipboard.writeText(txt); } catch { const i = $('#shUrl'); i.value = txt; i.select(); document.execCommand('copy'); i.value = siteUrl(); }
+        return toast(cp.dataset.copy === 'url' ? 'Enlace copiado' : 'Mensaje copiado');
+      }
       const g = e.target.closest('[data-go]'); if (!g) return; e.preventDefault();
       if (g.dataset.kind) S.kind = g.dataset.kind;
       go(g.dataset.go);

@@ -382,3 +382,13 @@ dialog::backdrop{background:rgba(8,6,12,.55);-webkit-backdrop-filter:blur(6px);b
 /* v2.3 · modo oscuro igual que el sitio: negro sólido y más contraste */
 html[data-theme="dark"]{--g1:transparent;--g2:transparent;--bg:#09090B;--card:#111114;--soft:#18181C;--text:#F6F4F0;--text-2:#C4BFCB;--text-3:#9A94A6;--line:rgba(255,255,255,.16)}
 html[data-theme="dark"] body::before{background:none}
+
+/* v2.4 · compartir + tooltips de la barra superior hacia abajo */
+.top-actions [data-tip]::after{bottom:auto!important;top:calc(100% + 10px)!important;transform:translateY(-4px)!important}
+.top-actions [data-tip]:hover::after,.top-actions [data-tip]:focus-visible::after{transform:none!important}
+.share-in{display:grid;grid-template-columns:minmax(0,260px) 1fr;gap:1.2rem;align-items:center}
+.share-in img{width:100%;border-radius:14px;border:1px solid var(--line);box-shadow:var(--sh)}
+.share-btns{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem}
+.share .in{width:100%}
+@media (max-width:640px){.share-in{grid-template-columns:1fr}}
+.share{margin-bottom:1rem}
