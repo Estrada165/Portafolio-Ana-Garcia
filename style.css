@@ -1027,3 +1027,29 @@ html[data-theme="dark"] .gv-frame{border:1px solid rgba(255,255,255,.18)}
 @media (min-width:1000px){.gv-info>.gv-pos,.gv-info>.gv-keys{align-self:stretch!important;width:auto!important}}
 @media (min-width:1000px){.gv-info{flex-wrap:nowrap!important}}
 @media (min-width:1000px){.gv-info::before{flex:none}}
+
+/* v5.4 · fondo difuminado en vez de bandas, carrusel de guías, firma de marca */
+.tile .bd{display:none}
+.justified.jcar .tile .bd{display:block;position:absolute;inset:-24px;background-size:cover;background-position:center;filter:blur(20px) saturate(1.25);opacity:.9;pointer-events:none}
+.justified.jcar .tile img{z-index:1}
+.justified.jcar .tile{background:var(--soft)}
+.g-cover{border-radius:12px!important;overflow:hidden}
+.g-cover img{border-radius:12px}
+/* guías: carrusel cuando hay varias */
+.guides .lc{width:100%}
+.g-list{padding:.3rem .2rem .6rem}
+.guides .lc-btn{top:calc(50% - 23px)}
+.g-tab{background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.g-tab[aria-selected="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--sh)}
+.gv-keys{display:none!important}
+.gv-brand{display:none}
+@media (min-width:1000px){
+  .gv-info::before{display:none}
+  .gv-brand{display:flex;align-items:center;gap:.65rem;padding-bottom:.9rem;margin-bottom:.1rem;border-bottom:1px dashed var(--line);width:100%;flex:none}
+  .gv-brand img{width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line)}
+  .gv-brand span{display:grid;line-height:1.2}
+  .gv-brand b{font-size:.88rem;font-weight:600}
+  .gv-brand small{font-size:.76rem;color:var(--text-2)}
+  .gv-info h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
+  .gv-info{overflow:hidden}
+}

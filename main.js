@@ -370,9 +370,9 @@
       if (!t) {
         t = document.createElement('button');
         t.className = 'tile'; t.dataset.cursor = 'Ver'; t.setAttribute('aria-label', `Ampliar ${it.alt}`);
-        t.innerHTML = `<img src="${esc(it.thumb || it.src)}" alt="" loading="lazy" decoding="async">${it.title || it.category ? `<span class="cap">${esc(it.title || it.category)}</span>` : ''}`;
+        t.innerHTML = `<i class="bd" style="background-image:url('${esc(it.thumb || it.src)}')"></i><img src="${esc(it.thumb || it.src)}" alt="" loading="lazy" decoding="async">${it.title || it.category ? `<span class="cap">${esc(it.title || it.category)}</span>` : ''}`;
         t._it = it; t._r = ratioOf(it) || 1.25; t._known = !!ratioOf(it);
-        const img = t.firstChild, done = () => {
+        const img = t.querySelector('img'), done = () => {
           if (!t._known && img.naturalWidth) { t._r = clamp(img.naturalWidth / img.naturalHeight, .5, 2.4); t._known = true; layoutSoon(); }
           t.classList.add('ok');
         };
@@ -465,16 +465,15 @@
         </div></article>`;
     }).join('');
     $$('.logo-tile').forEach((t, i) => isLightImg(LOGOS[i].src).then(f => t.classList.toggle('on-dark', f === true)));
-    setupLogoCarousel();
+    setupCarousel($('#logosGrid'), 'Logos');
   }
 
-  /* Carrusel estático de logos: flechas en escritorio (solo si hay más de los que caben) y arrastre con el dedo en móvil */
-  function setupLogoCarousel() {
-    const track = $('#logosGrid');
+  /* Carrusel estático (logos y guías): flechas en escritorio (solo si hay más de los que caben) y arrastre con el dedo en móvil */
+  function setupCarousel(track, label) {
     let wrap = track.parentElement;
     if (!wrap.classList.contains('lc')) {
       wrap = document.createElement('div'); wrap.className = 'lc'; track.before(wrap); wrap.appendChild(track);
-      wrap.insertAdjacentHTML('beforeend', `<button class="lc-btn prev" aria-label="Logos anteriores">${icon('left')}</button><button class="lc-btn next" aria-label="Logos siguientes">${icon('right')}</button>`);
+      wrap.insertAdjacentHTML('beforeend', `<button class="lc-btn prev" aria-label="${label} anteriores">${icon('left')}</button><button class="lc-btn next" aria-label="${label} siguientes">${icon('right')}</button>`);
       const step = dir => track.scrollBy({ left: dir * track.clientWidth * .9, behavior: reduceMotion ? 'auto' : 'smooth' });
       $('.lc-btn.prev', wrap).addEventListener('click', () => step(-1));
       $('.lc-btn.next', wrap).addEventListener('click', () => step(1));
@@ -544,6 +543,7 @@
       </div>` : ''}
       <div class="g-stage" id="gStage" aria-live="polite"></div>`;
     const tabs = $$('.g-tab');
+    if ($('.g-list')) setupCarousel($('.g-list'), 'Guías');
     tabs.forEach(t => t.addEventListener('click', () => {
       tabs.forEach(x => x.setAttribute('aria-selected', x === t));
       openDoc(docs[+t.dataset.doc]);
@@ -573,7 +573,7 @@
           <div class="gv-meta">${[doc.page_count + ' páginas', doc.client, doc.year].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
           ${doc.description ? `<p class="gv-desc" id="rdDesc">${esc(doc.description)}</p><button class="gv-more" id="rdMore" hidden>Leer más</button>` : ''}
           <div class="gv-pos" aria-hidden="true"><div class="gv-big"><b id="rdPos">1</b><span>/ ${n}</span></div><i><u id="rdBar"></u></i></div>
-          <div class="gv-keys" aria-hidden="true"><span><kbd>←</kbd><kbd>→</kbd> cambiar de página</span><span><kbd>clic</kbd> ampliar</span></div>
+          <div class="gv-brand" aria-hidden="true"><img src="imagenes/logo.png" alt="" width="34" height="34"><span><b>Ana García</b><small>Diseño gráfico</small></span></div>
           ${link}
         </div>
         <div class="gv-main">
