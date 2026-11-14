@@ -504,11 +504,11 @@
     sec.hidden = false;
     const meta = d => [d.page_count ? `${d.page_count} páginas` : 'PDF', d.client, d.year].filter(Boolean).join(' · ');
     $('#guides').innerHTML = `
-      <div class="g-list" role="tablist" aria-label="Guías disponibles">
+      ${docs.length > 1 ? `<div class="g-list" role="tablist" aria-label="Guías disponibles">
         ${docs.map((d, i) => `<button class="g-tab" role="tab" aria-selected="${i === 0}" data-doc="${i}">
           <span class="g-cover">${d.cover_url ? `<img src="${esc(d.cover_url)}" alt="" loading="lazy" decoding="async">` : icon('grid')}</span>
           <span class="g-text"><strong>${esc(d.title)}</strong><small>${esc(meta(d))}</small></span></button>`).join('')}
-      </div>
+      </div>` : ''}
       <div class="g-stage" id="gStage" aria-live="polite"></div>`;
     const tabs = $$('.g-tab');
     tabs.forEach(t => t.addEventListener('click', () => {
@@ -519,32 +519,35 @@
     io.observe(sec);
   }
 
+  /* Lector de guías: el marco mide lo que mide la pantalla, así la página siempre se ve completa */
   async function openDoc(doc) {
     const stage = $('#gStage'), token = (stage._t = (stage._t || 0) + 1);
-    const facts = [doc.page_count ? `${doc.page_count} páginas` : '', doc.client, doc.year].filter(Boolean).map(f => `<span>${esc(f)}</span>`).join('');
-    const head = (action = '') => `<div class="stage-head"><div><h3>${esc(doc.title)}</h3>${doc.description ? `<p>${esc(doc.description)}</p>` : ''}${facts ? `<div class="facts">${facts}</div>` : ''}</div>${action}</div>`;
+    const meta = [doc.page_count ? `${doc.page_count} páginas` : 'PDF', doc.client, doc.year].filter(Boolean).join(' · ');
     const link = doc.source_url ? `<a class="btn btn-line btn-sm" href="${esc(doc.source_url)}" target="_blank" rel="noopener">${icon('external')} Abrir PDF</a>` : '';
-    if (!doc.page_count) { stage.innerHTML = head(link) + '<p class="empty">Esta guía está disponible como archivo PDF.</p>'; return; }
+    if (!doc.page_count) { stage.innerHTML = `<div class="gv-empty"><h3>${esc(doc.title)}</h3><p>Esta guía está disponible como archivo PDF.</p>${link}</div>`; return; }
 
-    stage.innerHTML = head() + '<div class="reader"><div class="rd-page skeleton" aria-hidden="true"></div></div>';
+    stage.innerHTML = '<div class="gv skeleton" aria-hidden="true"></div>';
     const pages = await getPages(doc);
     if (token !== stage._t) return;                       // cambió de guía mientras cargaba
-    if (!pages.length) { stage.innerHTML = head(link) + '<p class="empty">No se pudieron cargar las páginas. Inténtalo de nuevo en un momento.</p>'; return; }
+    if (!pages.length) { stage.innerHTML = `<div class="gv-empty"><h3>${esc(doc.title)}</h3><p>No se pudieron cargar las páginas. Inténtalo de nuevo en un momento.</p>${link}</div>`; return; }
 
     const key = `doc-${doc.id}`, n = pages.length;
     GROUPS[key] = pages.map((p, i) => ({ src: p.image_url, thumb: p.thumb_url, title: doc.title, desc: `Página ${i + 1} de ${n}`, alt: `${doc.title}, página ${i + 1}` }));
-    stage.innerHTML = head(`<button class="btn btn-sm" id="rdOpen" data-v="${esc(key)}" data-i="0">${icon('plus')} Abrir guía</button>`) + `
-      <div class="reader" tabindex="0" aria-label="Páginas de ${esc(doc.title)}. Usa las flechas del teclado para avanzar.">
-        <button class="rd-page" id="rdPage" data-v="${esc(key)}" data-i="0" data-cursor="Ver"><img id="rdImg" alt="" decoding="async"></button>
+    stage.innerHTML = `
+      <div class="gv" tabindex="0" aria-label="${esc(doc.title)}. Usa las flechas del teclado para cambiar de página.">
+        <aside class="gv-rail" id="rdThumbs" aria-label="Páginas">${pages.map((p, i) => `<button class="rt" data-p="${i}" aria-label="Ir a la página ${i + 1}"><img src="${esc(p.thumb_url || p.image_url)}" alt=""${dims(p)} loading="lazy" decoding="async"><b>${i + 1}</b></button>`).join('')}</aside>
+        <div class="gv-main">
+          <button class="gv-page" id="rdPage" data-v="${esc(key)}" data-i="0" data-cursor="Ver" aria-label="Ampliar la página"><img id="rdImg" alt="" decoding="async"></button>
+          <div class="gv-top"><div class="gv-id"><strong>${esc(doc.title)}</strong><small>${esc(meta)}</small></div>
+            <button class="gv-ic" id="rdOpen" data-v="${esc(key)}" data-i="0" aria-label="Ampliar con zoom" data-tip="Ampliar">${icon('zoom')}</button></div>
+          <button class="gv-nav prev" id="rdPrev" aria-label="Página anterior">${icon('left')}</button>
+          <button class="gv-nav next" id="rdNext" aria-label="Página siguiente">${icon('right')}</button>
+          <div class="gv-count" id="rdCount" aria-live="polite"></div>
+        </div>
       </div>
-      <div class="rd-bar">
-        <button class="rd-btn" id="rdPrev" aria-label="Página anterior">${icon('left')}</button>
-        <span class="rd-count" id="rdCount" aria-live="polite"></span>
-        <button class="rd-btn" id="rdNext" aria-label="Página siguiente">${icon('right')}</button>
-      </div>
-      <div class="rd-thumbs" id="rdThumbs" role="list">${pages.map((p, i) => `<button class="rt" role="listitem" data-p="${i}" aria-label="Ir a la página ${i + 1}"><img src="${esc(p.thumb_url || p.image_url)}" alt=""${dims(p)} loading="lazy" decoding="async"></button>`).join('')}</div>`;
+      ${doc.description ? `<p class="gv-cap">${esc(doc.description)}</p>` : ''}`;
 
-    const img = $('#rdImg'), pg = $('#rdPage'), strip = $('#rdThumbs'), thumbs = $$('.rt', strip);
+    const gv = $('.gv', stage), img = $('#rdImg'), pg = $('#rdPage'), strip = $('#rdThumbs'), thumbs = $$('.rt', strip);
     let cur = -1, swiped = false;
     const show = (k, first) => {
       k = clamp(k, 0, n - 1); if (k === cur) return; cur = k;
@@ -553,10 +556,10 @@
       $('#rdCount').textContent = `${k + 1} / ${n}`;
       $('#rdPrev').disabled = k === 0; $('#rdNext').disabled = k === n - 1;
       thumbs.forEach((b, i) => b.setAttribute('aria-current', i === k));
-      const b = thumbs[k]; strip.scrollTo({ left: b.offsetLeft - strip.clientWidth / 2 + b.offsetWidth / 2, behavior: first || reduceMotion ? 'auto' : 'smooth' });
+      const b = thumbs[k], vertical = strip.scrollHeight > strip.clientHeight + 4 && strip.scrollWidth <= strip.clientWidth + 4;
+      strip.scrollTo({ [vertical ? 'top' : 'left']: vertical ? b.offsetTop - strip.clientHeight / 2 + b.offsetHeight / 2 : b.offsetLeft - strip.clientWidth / 2 + b.offsetWidth / 2, behavior: first || reduceMotion ? 'auto' : 'smooth' });
       img.alt = `${doc.title}, página ${k + 1}`;
-      if (p.width && p.height) { img.width = p.width; img.height = p.height; }
-      const full = new Image();                           // se muestra la página en alta calidad cuando termina de cargar
+      const full = new Image();                           // la página se muestra en alta calidad cuando termina de cargar
       full.onload = () => { if (cur === k) { img.src = p.image_url; img.classList.remove('swap'); void img.offsetWidth; img.classList.add('swap'); } };
       full.src = p.image_url;
       if (first) img.src = p.thumb_url || p.image_url;
@@ -566,14 +569,12 @@
     $('#rdPrev').addEventListener('click', () => show(cur - 1));
     $('#rdNext').addEventListener('click', () => show(cur + 1));
     strip.addEventListener('click', e => { const b = e.target.closest('.rt'); if (b) show(+b.dataset.p); });
-    $('.reader', stage).addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); show(cur - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); show(cur + 1); } });
+    gv.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); show(cur - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); show(cur + 1); } });
     let x0 = null;                                        // deslizar con el dedo para cambiar de página
     pg.addEventListener('pointerdown', e => { x0 = e.clientX; swiped = false; });
     pg.addEventListener('pointerup', e => { if (x0 !== null && Math.abs(e.clientX - x0) > 50) { swiped = true; show(cur + (e.clientX < x0 ? 1 : -1)); } x0 = null; });
     pg.addEventListener('click', e => { if (swiped) { e.stopImmediatePropagation(); e.preventDefault(); swiped = false; } }, true);
   }
-
-  const TINT = { inicio: 'a', destacados: 'b', galeria: 'c', logos: 'd', guias: 'e', 'sobre-mi': 'f', contacto: 'g' };
 
   /* ── Recordar dónde estabas al recargar ──────────────────────── */
   const pos = { track: false };
@@ -635,6 +636,7 @@
     };
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
+    const TINT = { inicio: 'a', destacados: 'b', galeria: 'c', logos: 'd', guias: 'e', 'sobre-mi': 'f', contacto: 'g' };
     const links = $$('#navLinks a');
     const spy = new IntersectionObserver(es => es.forEach(en => {
       if (!en.isIntersecting) return;
@@ -658,7 +660,7 @@
     if (contact.instagram) {
       const u = String(contact.instagram).replace(/^@/, '').replace(/[^\w.]/g, '');
       if (u) $('.footer-social').insertAdjacentHTML('beforeend', `<a class="icon-btn" href="https://instagram.com/${u}" target="_blank" rel="noopener" aria-label="Instagram">${icon('insta')}</a>`);
-      if (u) $('.contact-list').insertAdjacentHTML('beforeend', `<li>${icon('insta')}<a href="https://instagram.com/${u}" target="_blank" rel="noopener">@${u}</a></li>`);
+      if (u) $('.contact-list').insertAdjacentHTML('beforeend', `<li><span class="ico">${icon('insta')}</span><span class="way"><small>Instagram</small><a href="https://instagram.com/${u}" target="_blank" rel="noopener">@${u}</a></span></li>`);
     }
     $('#contactForm').addEventListener('submit', e => {
       e.preventDefault();

@@ -11,7 +11,9 @@
   <meta property="og:description" content="Portfolio de identidades, mockups, diseños e ilustraciones.">
   <meta property="og:image"       content="imagenes/logo.png">
   <meta property="og:type"        content="website">
-  <link rel="icon" type="image/png" href="imagenes/logo.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preload" href="fonts/playfair.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
@@ -189,23 +191,25 @@
 
 <section class="section contact" id="contacto" data-theme-section="contacto">
   <div class="container">
-    <header class="sec-head sec-center">
-      <h2>¿Tienes un proyecto?</h2>
-      <p>Cuéntame qué necesitas y te respondo por WhatsApp o correo.</p>
-    </header>
-    <div class="contact-card">
-      <div class="contact-side">
-        <p class="contact-lead">Freelance, prácticas y colaboraciones creativas.</p>
-        <ul class="contact-list">
-          <li><span class="ico"><svg class="i"><use href="#i-mail"/></svg></span><a id="cEmail" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a></li>
-          <li><span class="ico"><svg class="i"><use href="#i-chat"/></svg></span><a id="cWhats" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a></li>
-          <li><span class="ico"><svg class="i"><use href="#i-pin"/></svg></span><span>Piura, Perú</span></li>
+    <div class="cx">
+      <div class="cx-intro">
+        <span class="cx-orb o1" aria-hidden="true"></span><span class="cx-orb o2" aria-hidden="true"></span>
+        <h2>¿Tienes un proyecto?</h2>
+        <p class="cx-lead">Cuéntame qué necesitas y te respondo por WhatsApp o correo. Freelance, prácticas y colaboraciones creativas.</p>
+        <a id="cWhatsBtn" class="cx-wa" href="https://wa.me/51977575523?text=Hola%20Ana%20Luc%C3%ADa%2C%20me%20interesa%20trabajar%20contigo" target="_blank" rel="noopener">
+          <svg class="i"><use href="#i-chat"/></svg><span>Escribir por WhatsApp</span></a>
+        <ul class="contact-list cx-ways">
+          <li><span class="ico"><svg class="i"><use href="#i-mail"/></svg></span><span class="way"><small>Correo</small><a id="cEmail" href="mailto:agarcialachira@gmail.com">agarcialachira@gmail.com</a></span></li>
+          <li><span class="ico"><svg class="i"><use href="#i-chat"/></svg></span><span class="way"><small>WhatsApp</small><a id="cWhats" href="https://wa.me/51977575523" target="_blank" rel="noopener">+51 977 575 523</a></span></li>
+          <li><span class="ico"><svg class="i"><use href="#i-pin"/></svg></span><span class="way"><small>Ubicación</small><span>Piura, Perú</span></span></li>
         </ul>
-        <a id="cWhatsBtn" class="btn btn-wa" href="https://wa.me/51977575523?text=Hola%20Ana%20Luc%C3%ADa%2C%20me%20interesa%20trabajar%20contigo" target="_blank" rel="noopener">Escribir por WhatsApp</a>
       </div>
-      <form class="form" id="contactForm" novalidate>
-        <label>Nombre<input type="text" id="fName" required autocomplete="name"></label>
-        <label>Correo<input type="email" id="fEmail" required autocomplete="email"></label>
+      <form class="form cx-form" id="contactForm" novalidate>
+        <h3>Escríbeme un mensaje</h3>
+        <div class="row2">
+          <label>Nombre<input type="text" id="fName" required autocomplete="name" placeholder="Tu nombre"></label>
+          <label>Correo<input type="email" id="fEmail" required autocomplete="email" placeholder="tu@correo.com"></label>
+        </div>
         <label>¿Qué necesitas?
           <select id="fService" required>
             <option value="">Elige una opción</option>
@@ -218,7 +222,8 @@
         </label>
         <label>Mensaje<textarea id="fMessage" rows="4" placeholder="Cuéntame de tu proyecto" required></textarea></label>
         <p class="form-msg" id="formMsg" role="status"></p>
-        <button type="submit" class="btn">Enviar por WhatsApp</button>
+        <button type="submit" class="btn cx-send"><span>Enviar por WhatsApp</span><svg class="i"><use href="#i-right"/></svg></button>
+        <p class="cx-note">Se abrirá WhatsApp con tu mensaje listo para enviar.</p>
       </form>
     </div>
   </div>
