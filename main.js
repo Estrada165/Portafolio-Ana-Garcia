@@ -392,8 +392,8 @@
     const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { if (!gal.tiles.length) box.textContent = ''; return; }
     if (isMob()) {                                       // móvil: carrusel horizontal con imán
       box.classList.add('jcar'); box.textContent = '';
-      const h = Math.round(Math.min(380, Math.max(260, innerHeight * .5)));
-      gal.tiles.forEach(t => { t.style.width = `${Math.round(Math.min(t._r * h, W * .86))}px`; t.style.height = `${h}px`; box.appendChild(t); });
+      const w = Math.round(W * .86), hMax = Math.round(Math.max(280, innerHeight * .58));
+      gal.tiles.forEach(t => { t.style.width = `${w}px`; t.style.height = `${Math.round(Math.min(hMax, Math.max(190, w / t._r)))}px`; box.appendChild(t); });
       gal.rendered = gal.tiles.length; $('#galMore').hidden = true; $('#galLess').hidden = true; return;
     }
     box.classList.remove('jcar');
@@ -571,7 +571,7 @@
         <div class="gv-info">
           <h3>${esc(doc.title)}</h3>
           <div class="gv-meta">${[doc.page_count + ' páginas', doc.client, doc.year].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
-          ${doc.description ? `<p>${esc(doc.description)}</p>` : ''}
+          ${doc.description ? `<p class="gv-desc" id="rdDesc">${esc(doc.description)}</p><button class="gv-more" id="rdMore" hidden>Leer más</button>` : ''}
           <div class="gv-pos" aria-hidden="true"><span>Página <b id="rdPos">1</b> de ${n}</span><i><u id="rdBar"></u></i></div>
           ${link}
         </div>
@@ -584,6 +584,8 @@
       </div>`;
 
     const p0 = pages[0]; if (p0?.width && p0?.height) stage.querySelector('.gv').style.setProperty('--ar', (p0.width / p0.height).toFixed(4));
+    const dsc = $('#rdDesc'), mor = $('#rdMore');                 // descripción larga: se recorta y se puede abrir
+    if (dsc && mor) { requestAnimationFrame(() => { if (dsc.scrollHeight > dsc.clientHeight + 2) mor.hidden = false; }); mor.addEventListener('click', () => { const o = dsc.classList.toggle('open'); mor.textContent = o ? 'Leer menos' : 'Leer más'; }); }
     const gv = $('.gv', stage), img = $('#rdImg'), pg = $('#rdPage');
     let cur = -1, swiped = false;
     const show = (k, first) => {

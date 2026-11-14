@@ -378,3 +378,7 @@ dialog::backdrop{background:rgba(8,6,12,.55);-webkit-backdrop-filter:blur(6px);b
 .rowend{display:flex;gap:.4rem;align-items:center}
 .card h3 .btn.sm{float:right;margin-left:.6rem;font-weight:500}
 .card h3 small{margin-left:.3rem}
+
+/* v2.3 · modo oscuro igual que el sitio: negro sólido y más contraste */
+html[data-theme="dark"]{--g1:transparent;--g2:transparent;--bg:#09090B;--card:#111114;--soft:#18181C;--text:#F6F4F0;--text-2:#C4BFCB;--text-3:#9A94A6;--line:rgba(255,255,255,.16)}
+html[data-theme="dark"] body::before{background:none}

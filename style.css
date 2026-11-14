@@ -987,3 +987,16 @@ html[data-theme="dark"] .chip small{opacity:.85}
 /* Pie: los textos quedan alineados con el título de cada columna */
 .f-col a,.f-line{gap:.55rem}
 .f-col a .i,.f-line .i{width:16px;height:16px;margin-inline:7px}
+
+/* v5.2 · imágenes completas, descripciones acotadas */
+.tile img{object-fit:contain!important;transform:none!important;background:var(--soft)}
+.tile:hover img{transform:none!important}
+.justified.jcar .tile{background:var(--soft)}
+.logo-meta p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.gv-desc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
+.gv-desc.open{-webkit-line-clamp:unset;line-clamp:unset;display:block}
+.gv-more{font-size:.84rem;font-weight:500;color:var(--accent);padding:0;margin-top:-.4rem;text-decoration:underline;text-underline-offset:3px}
+@media (min-width:1000px){.gv-info p.gv-desc{-webkit-line-clamp:5;line-clamp:5;max-height:none;overflow:hidden}.gv-info p.gv-desc.open{overflow:auto;max-height:calc(var(--gv-h) - 300px)}}
+.gv-info .gv-more{justify-self:center}
+@media (min-width:1000px){.gv-info .gv-more{justify-self:start}}
+.feat-text p:not(.feat-tags){overflow-wrap:anywhere}

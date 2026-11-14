@@ -499,7 +499,7 @@
           <div class="field"><label for="eKind">Tipo</label><select id="eKind">${KINDS.map(k => `<option value="${k.id}" ${k.id === F.kind ? 'selected' : ''}>${k.label}</option>`).join('')}</select></div></div>
         <div class="field"><label for="eCat">Categoría</label><input type="text" id="eCat" list="catList" maxlength="60" value="${esc(F.category)}"><datalist id="catList">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
           <span class="hint">Las categorías de Mockups, Diseños e Ilustraciones se usan como filtros en la galería.</span></div>
-        <div class="field"><label for="eDesc">Descripción</label><textarea id="eDesc" maxlength="300">${esc(F.description)}</textarea></div>
+        <div class="field"><label for="eDesc">Descripción <small style="color:var(--text-3);font-weight:400">· corta, máx. 140 caracteres</small></label><textarea id="eDesc" maxlength="140">${esc(F.description)}</textarea></div>
         ${w.kind === 'featured' && S.tagsOk ? `<div class="field"><label>Etiquetas</label><div class="tagbox" id="tagbox">${tags.map((t, i) => `<span>${esc(t)}<button type="button" data-rt="${i}" aria-label="Quitar ${esc(t)}">${ic('x')}</button></span>`).join('')}<input type="text" id="tagIn" placeholder="Escribe y pulsa Enter" maxlength="24"></div></div>` : ''}
         <label class="switch" style="margin-bottom:1rem"><input type="checkbox" id="eVis" ${F.visible ? 'checked' : ''}><span class="tr"></span>Visible en el sitio</label>
         ${w.kind === 'logo' ? `<div class="sub-h" style="margin-top:.6rem"><div><h3>Variaciones</h3><p>Versión blanca, negra, horizontal… Se muestran junto al logo principal.</p></div><button class="btn sm" data-a="addvar">${ic('plus')}Añadir</button></div>
@@ -693,7 +693,7 @@
     body.innerHTML = `<div class="field"><label for="dT">Título</label><input type="text" id="dT" maxlength="90" value="${esc(d.title)}"></div>
       <div class="row2"><div class="field"><label for="dC">Cliente o marca</label><input type="text" id="dC" maxlength="70" value="${esc(d.client || '')}"></div>
         <div class="field"><label for="dY">Año</label><input type="number" id="dY" min="1990" max="2100" value="${d.year || ''}"></div></div>
-      <div class="field"><label for="dD">Descripción</label><textarea id="dD" maxlength="300">${esc(d.description || '')}</textarea></div>`;
+      <div class="field"><label for="dD">Descripción <small style="color:var(--text-3);font-weight:400">· corta, máx. 220 caracteres</small></label><textarea id="dD" maxlength="220">${esc(d.description || '')}</textarea></div>`;
     const foot = document.createElement('div'); foot.innerHTML = `<span></span><div class="r"><button class="btn" data-a="c">Cancelar</button><button class="btn primary" data-a="s">Guardar</button></div>`;
     foot.onclick = e => run(async () => {
       const a = e.target.closest('[data-a]')?.dataset.a; if (a === 'c') return closeDlg(null); if (a !== 's') return;
