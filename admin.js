@@ -374,8 +374,7 @@
         <span class="handle" aria-hidden="true">${ic('drag')}</span></div>
       <div class="body"><h4 class="${w.title ? '' : 'empty'}">${esc(w.title || 'Sin título')}</h4><p>${esc(w.category || w.description || '—')}</p>${w.tags?.length ? `<div class="tags">${w.tags.slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div>
       <div class="acts">
-        <button class="icon-btn" data-act="left" data-tip="Mover antes" aria-label="Mover antes" ${i === 0 ? 'disabled' : ''}>${ic('left')}</button>
-        <button class="icon-btn" data-act="right" data-tip="Mover después" aria-label="Mover después" ${i === n - 1 ? 'disabled' : ''}>${ic('right')}</button>
+        <label class="ord" data-tip="Número de orden: escribe la posición"><span>N.º</span><input type="number" inputmode="numeric" min="1" max="${n}" value="${i + 1}" data-pos aria-label="Posición en la lista (de ${n})"></label>
         <span class="sp"></span>
         <button class="icon-btn" data-act="vis" data-tip="${w.visible ? 'Ocultar del sitio' : 'Mostrar en el sitio'}" aria-label="${w.visible ? 'Ocultar' : 'Mostrar'}">${ic(w.visible ? 'eye' : 'eye-off')}</button>
         <button class="icon-btn" data-act="edit" data-tip="Editar" aria-label="Editar">${ic('edit')}</button>
@@ -391,6 +390,7 @@
         <button class="icon-btn" data-act="lvis" data-tip="${it.off ? 'Mostrar en el sitio' : 'Ocultar del sitio'}" aria-label="${it.off ? 'Mostrar' : 'Ocultar'}">${ic(it.off ? 'eye-off' : 'eye')}</button></div>
     </article>`;
 
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   function wireWorks(el) {
     el.onclick = e => run(async () => {
       const chip = e.target.closest('.chip[data-kind]'); if (chip) { S.kind = chip.dataset.kind; saveState(); return renderWorks(); }
@@ -409,7 +409,6 @@
           await saveSetting('local_state', st); return renderWorks();
         }
         case 'vis': ok(await sb.from('works').update({ visible: !w.visible }).eq('id', id)); w.visible = !w.visible; toast(w.visible ? 'Visible en el sitio' : 'Oculta del sitio'); return renderWorks();
-        case 'left': case 'right': return moveWork(id, b.dataset.act === 'left' ? -1 : 1);
         case 'edit': return editWork(w);
         case 'del': {
           if (!await ask('Eliminar pieza', `¿Eliminar «${w.title || 'Sin título'}»? Se borrará también su imagen${w.kind === 'logo' ? ' y sus variaciones' : ''}. No se puede deshacer.`, 'Eliminar', true)) return;
@@ -423,6 +422,12 @@
     ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('over')));
     drop.addEventListener('drop', e => { e.preventDefault(); const f = [...e.dataTransfer.files]; if (f.length) uploadWorks(f); });
     drop.addEventListener('click', () => pickFiles(files => uploadWorks(files)));
+    el.onchange = e => run(async () => {
+      const inp = e.target.closest('[data-pos]'); if (!inp) return;
+      const id = inp.closest('.work')?.dataset.id, list = worksOf(S.kind), from = list.findIndex(x => x.id === id), to = clamp(Math.round(+inp.value) || from + 1, 1, list.length) - 1;
+      if (to === from) return renderWorks();
+      const [m] = list.splice(from, 1); list.splice(to, 0, m); await persistOrder(list); toast(`Movida a la posición ${to + 1}`); renderWorks();
+    });
     // Reordenar arrastrando tarjetas
     const grid = $('#grid'); if (!grid) return;
     let dragId = null;
@@ -572,8 +577,7 @@
           <div class="cov">${d.cover_url ? `<img src="${esc(d.cover_url)}" alt="" loading="lazy">` : ''}</div>
           <div><h4>${esc(d.title)}</h4><p>${[d.client, d.year, `${d.page_count} página${d.page_count === 1 ? '' : 's'}`].filter(Boolean).map(esc).join(' · ')}${d.visible ? '' : ' · <b style="color:var(--warn)">Oculta</b>'}</p></div>
           <div class="acts">
-            <button class="icon-btn" data-act="up" data-tip="Subir en la lista" aria-label="Subir" ${i === 0 ? 'disabled' : ''}>${ic('up')}</button>
-            <button class="icon-btn" data-act="down" data-tip="Bajar en la lista" aria-label="Bajar" ${i === S.docs.length - 1 ? 'disabled' : ''}>${ic('down')}</button>
+            <label class="ord" data-tip="Número de orden"><span>N.º</span><input type="number" inputmode="numeric" min="1" max="${S.docs.length}" value="${i + 1}" data-pos aria-label="Posición en la lista (de ${S.docs.length})"></label>
             <button class="icon-btn" data-act="vis" data-tip="${d.visible ? 'Ocultar del sitio' : 'Mostrar en el sitio'}" aria-label="${d.visible ? 'Ocultar' : 'Mostrar'}">${ic(d.visible ? 'eye' : 'eye-off')}</button>
             <button class="icon-btn" data-act="edit" data-tip="Editar datos" aria-label="Editar">${ic('edit')}</button>
             <button class="icon-btn danger" data-act="del" data-tip="Eliminar" aria-label="Eliminar">${ic('trash')}</button>
@@ -585,15 +589,18 @@
     ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('over')));
     drop.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) newDoc(f); });
     drop.addEventListener('click', pick);
+    el.onchange = e => run(async () => {
+      const inp = e.target.closest('[data-pos]'); if (!inp) return;
+      const d = S.docs.find(x => x.id === inp.closest('.doc')?.dataset.id), i = S.docs.indexOf(d), to = clamp(Math.round(+inp.value) || i + 1, 1, S.docs.length) - 1;
+      if (to === i) return renderPdf();
+      S.docs.splice(i, 1); S.docs.splice(to, 0, d);
+      await Promise.all(S.docs.map((x, n) => x.sort_order === n + 1 ? null : (x.sort_order = n + 1, sb.from('pdf_documents').update({ sort_order: n + 1 }).eq('id', x.id).then(ok)))); toast(`Guía movida a la posición ${to + 1}`); renderPdf();
+    });
     el.onclick = e => run(async () => {
       const b = e.target.closest('[data-act]'); if (!b) return;
       if (b.dataset.act === 'new') return pick();
       const id = b.closest('.doc')?.dataset.id, d = S.docs.find(x => x.id === id), i = S.docs.indexOf(d);
       if (b.dataset.act === 'vis') { ok(await sb.from('pdf_documents').update({ visible: !d.visible }).eq('id', id)); d.visible = !d.visible; return renderPdf(); }
-      if (b.dataset.act === 'up' || b.dataset.act === 'down') {
-        const j = i + (b.dataset.act === 'up' ? -1 : 1); [S.docs[i], S.docs[j]] = [S.docs[j], S.docs[i]];
-        await Promise.all(S.docs.map((x, n) => x.sort_order === n + 1 ? null : (x.sort_order = n + 1, sb.from('pdf_documents').update({ sort_order: n + 1 }).eq('id', x.id).then(ok)))); return renderPdf();
-      }
       if (b.dataset.act === 'edit') return editDoc(d);
       if (b.dataset.act === 'del') {
         if (!await ask('Eliminar guía', `¿Eliminar «${d.title}» con todas sus páginas? No se puede deshacer.`, 'Eliminar', true)) return;

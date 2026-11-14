@@ -535,29 +535,27 @@
     GROUPS[key] = pages.map((p, i) => ({ src: p.image_url, thumb: p.thumb_url, title: doc.title, desc: `Página ${i + 1} de ${n}`, alt: `${doc.title}, página ${i + 1}` }));
     stage.innerHTML = `
       <div class="gv" tabindex="0" aria-label="${esc(doc.title)}. Usa las flechas del teclado para cambiar de página.">
-        <aside class="gv-rail" id="rdThumbs" aria-label="Páginas">${pages.map((p, i) => `<button class="rt" data-p="${i}" aria-label="Ir a la página ${i + 1}"><img src="${esc(p.thumb_url || p.image_url)}" alt=""${dims(p)} loading="lazy" decoding="async"><b>${i + 1}</b></button>`).join('')}</aside>
+        <div class="gv-info">
+          <h3>${esc(doc.title)}</h3>
+          <div class="gv-meta">${[doc.page_count + ' páginas', doc.client, doc.year].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
+          ${doc.description ? `<p>${esc(doc.description)}</p>` : ''}
+          ${link}
+        </div>
         <div class="gv-main">
           <button class="gv-page" id="rdPage" data-v="${esc(key)}" data-i="0" data-cursor="Ver" aria-label="Ampliar la página"><img id="rdImg" alt="" decoding="async"></button>
-          <div class="gv-top"><div class="gv-id"><strong>${esc(doc.title)}</strong><small>${esc(meta)}</small></div>
-            <button class="gv-ic" id="rdOpen" data-v="${esc(key)}" data-i="0" aria-label="Ampliar con zoom" data-tip="Ampliar">${icon('zoom')}</button></div>
+          <button class="gv-ic" id="rdOpen" data-v="${esc(key)}" data-i="0" aria-label="Ampliar con zoom" data-tip="Ampliar">${icon('zoom')}</button>
           <button class="gv-nav prev" id="rdPrev" aria-label="Página anterior">${icon('left')}</button>
           <button class="gv-nav next" id="rdNext" aria-label="Página siguiente">${icon('right')}</button>
-          <div class="gv-count" id="rdCount" aria-live="polite"></div>
         </div>
-      </div>
-      ${doc.description ? `<p class="gv-cap">${esc(doc.description)}</p>` : ''}`;
+      </div>`;
 
-    const gv = $('.gv', stage), img = $('#rdImg'), pg = $('#rdPage'), strip = $('#rdThumbs'), thumbs = $$('.rt', strip);
+    const gv = $('.gv', stage), img = $('#rdImg'), pg = $('#rdPage');
     let cur = -1, swiped = false;
     const show = (k, first) => {
       k = clamp(k, 0, n - 1); if (k === cur) return; cur = k;
       const p = pages[k];
       pg.dataset.i = k; $('#rdOpen').dataset.i = k;
-      $('#rdCount').textContent = `${k + 1} / ${n}`;
       $('#rdPrev').disabled = k === 0; $('#rdNext').disabled = k === n - 1;
-      thumbs.forEach((b, i) => b.setAttribute('aria-current', i === k));
-      const b = thumbs[k], vertical = strip.scrollHeight > strip.clientHeight + 4 && strip.scrollWidth <= strip.clientWidth + 4;
-      strip.scrollTo({ [vertical ? 'top' : 'left']: vertical ? b.offsetTop - strip.clientHeight / 2 + b.offsetHeight / 2 : b.offsetLeft - strip.clientWidth / 2 + b.offsetWidth / 2, behavior: first || reduceMotion ? 'auto' : 'smooth' });
       img.alt = `${doc.title}, página ${k + 1}`;
       const full = new Image();                           // la página se muestra en alta calidad cuando termina de cargar
       full.onload = () => { if (cur === k) { img.src = p.image_url; img.classList.remove('swap'); void img.offsetWidth; img.classList.add('swap'); } };
@@ -568,7 +566,6 @@
     show(0, true);
     $('#rdPrev').addEventListener('click', () => show(cur - 1));
     $('#rdNext').addEventListener('click', () => show(cur + 1));
-    strip.addEventListener('click', e => { const b = e.target.closest('.rt'); if (b) show(+b.dataset.p); });
     gv.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); show(cur - 1); } else if (e.key === 'ArrowRight') { e.preventDefault(); show(cur + 1); } });
     let x0 = null;                                        // deslizar con el dedo para cambiar de página
     pg.addEventListener('pointerdown', e => { x0 = e.clientX; swiped = false; });
