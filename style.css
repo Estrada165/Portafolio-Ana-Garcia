@@ -1053,3 +1053,8 @@ html[data-theme="dark"] .gv-frame{border:1px solid rgba(255,255,255,.18)}
   .gv-info h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
   .gv-info{overflow:hidden}
 }
+
+/* v5.5 · carrusel móvil: cada tarjeta toma la forma de su imagen, sin bandas */
+.justified.jcar .tile .bd{display:none!important}
+.justified.jcar .tile img{object-fit:cover!important}
+.justified.jcar .tile{background:var(--soft)}

@@ -392,8 +392,8 @@
     const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { if (!gal.tiles.length) box.textContent = ''; return; }
     if (isMob()) {                                       // móvil: carrusel horizontal con imán
       box.classList.add('jcar'); box.textContent = '';
-      const h = Math.round(Math.min(270, Math.max(220, innerHeight * .31)));   // misma altura para todas: sin huecos debajo
-      gal.tiles.forEach(t => { t.style.width = `${Math.round(Math.min(t._r * h, W * .9))}px`; t.style.height = `${h}px`; box.appendChild(t); });
+      const h = Math.round(Math.min(250, Math.max(210, innerHeight * .28)));   // misma altura para todas: sin huecos; el ancho sigue la forma de cada imagen
+      gal.tiles.forEach(t => { t.style.width = `${Math.round(Math.min(t._r * h, W * .92))}px`; t.style.height = `${h}px`; box.appendChild(t); });
       gal.rendered = gal.tiles.length; $('#galMore').hidden = true; $('#galLess').hidden = true; return;
     }
     box.classList.remove('jcar');
