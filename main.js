@@ -339,7 +339,7 @@
       const b = e.target.closest('.chip'); if (!b) return;
       $$('.chip').forEach(c => c.setAttribute('aria-selected', c === b));
       const box = $('#gallery'); box.classList.add('swap');
-      setTimeout(() => { gal.filter = b.dataset.f; gal.shown = PAGE; build(); box.classList.remove('swap'); }, reduceMotion ? 0 : 220);
+      setTimeout(() => { gal.filter = b.dataset.f; gal.shown = PAGE; build(); box.scrollLeft = 0; box.classList.remove('swap'); }, reduceMotion ? 0 : 220);
     });
     $('#galMore').addEventListener('click', () => { gal.shown = (gal.rendered || gal.shown) + PAGE; build(); });
     $('#galLess').addEventListener('click', () => {
@@ -348,7 +348,8 @@
     });
     const st = [[data.featured.length, 'Proyectos destacados'], [data.logos.length, 'Logos'], [total, 'Piezas en la galería']].filter(x => x[0]);
     $('#aboutStats').innerHTML = st.map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('');
-    new ResizeObserver(() => { const w = $('#gallery').clientWidth; if (w !== gal.w) { gal.w = w; layout(); } }).observe($('#gallery'));
+    let wasMob = isMob();
+    new ResizeObserver(() => { const w = $('#gallery').clientWidth; if (w !== gal.w) { gal.w = w; if (wasMob !== isMob()) { wasMob = isMob(); build(); } else layout(); } }).observe($('#gallery'));
     build();
   }
 
@@ -361,7 +362,7 @@
 
   function build() {
     const list = pool(); gal.list = list; GROUPS.gallery = list;
-    const part = list.slice(0, gal.shown + 8);   // margen para cerrar la última fila
+    const part = list.slice(0, isMob() ? list.length : gal.shown + 8);   // margen para cerrar la última fila; en móvil van todas, en carrusel
     $('#galCount').textContent = `${list.length} ${list.length === 1 ? 'pieza' : 'piezas'}`;
     const old = new Map(gal.tiles.map(t => [t._it, t]));
     gal.tiles = part.map((it, i) => {
@@ -384,10 +385,18 @@
     layout();
   }
 
+  const isMob = () => innerWidth <= 640;
   let lt = 0;
   const layoutSoon = () => { clearTimeout(lt); lt = setTimeout(layout, 80); };
   function layout() {
     const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { if (!gal.tiles.length) box.textContent = ''; return; }
+    if (isMob()) {                                       // móvil: carrusel horizontal con imán
+      box.classList.add('jcar'); box.textContent = '';
+      const h = Math.round(Math.min(380, Math.max(260, innerHeight * .5)));
+      gal.tiles.forEach(t => { t.style.width = `${Math.round(Math.min(t._r * h, W * .86))}px`; t.style.height = `${h}px`; box.appendChild(t); });
+      gal.rendered = gal.tiles.length; $('#galMore').hidden = true; $('#galLess').hidden = true; return;
+    }
+    box.classList.remove('jcar');
     const gap = W <= 700 ? 8 : 12, H = W < 520 ? 170 : W < 820 ? 200 : W < 1180 ? 260 : 300;
     const frag = document.createDocumentFragment(); let row = [], sum = 0, rendered = 0;
     const flush = (full) => {
@@ -563,6 +572,7 @@
           <h3>${esc(doc.title)}</h3>
           <div class="gv-meta">${[doc.page_count + ' páginas', doc.client, doc.year].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
           ${doc.description ? `<p>${esc(doc.description)}</p>` : ''}
+          <div class="gv-pos" aria-hidden="true"><span>Página <b id="rdPos">1</b> de ${n}</span><i><u id="rdBar"></u></i></div>
           ${link}
         </div>
         <div class="gv-main">
@@ -580,6 +590,7 @@
       k = clamp(k, 0, n - 1); if (k === cur) return; cur = k;
       const p = pages[k];
       pg.dataset.i = k; $('#rdOpen').dataset.i = k;
+      $('#rdPos').textContent = k + 1; $('#rdBar').style.width = `${((k + 1) / n) * 100}%`;
       $('#rdPrev').disabled = k === 0; $('#rdNext').disabled = k === n - 1;
       img.alt = `${doc.title}, página ${k + 1}`;
       const full = new Image();                           // la página se muestra en alta calidad cuando termina de cargar

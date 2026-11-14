@@ -736,14 +736,14 @@
           <div class="field"><label for="aAT">Título del bloque</label><input type="text" id="aAT" maxlength="60" value="${esc(ab.areas_title ?? D.areas_title)}"></div>
           <div class="list-edit" id="areaList">${areas.map((a, i) => `<div class="li-row" data-i="${i}"><select class="in" data-f="icon" aria-label="Ícono">${AREA_ICONS.map(([v, l]) => `<option value="${v}" ${v === a.icon ? 'selected' : ''}>${l}</option>`).join('')}</select>
             <input class="in" data-f="title" value="${esc(a.title)}" placeholder="Título" maxlength="50" aria-label="Título"><input class="in" data-f="sub" value="${esc(a.sub || '')}" placeholder="Descripción corta" maxlength="80" aria-label="Descripción">
-            <button class="icon-btn danger" data-del="${i}" data-tip="Quitar" aria-label="Quitar">${ic('trash')}</button></div>`).join('')}</div>
+            <span class="rowend"><label class="ord"><span>Posición</span><input type="number" inputmode="numeric" min="1" max="${areas.length}" value="${i + 1}" data-apos aria-label="Posición del área (de ${areas.length})"></label><button class="icon-btn danger" data-del="${i}" data-tip="Quitar" aria-label="Quitar">${ic('trash')}</button></span></div>`).join('')}</div>
           ${areas.length < 8 ? `<button class="btn sm" id="addArea" style="margin-top:.8rem">${ic('plus')}Añadir área</button>` : ''}</div>
         <div class="card"><h3>Herramientas <small>hasta 12</small></h3>
           <div class="field"><label for="aTT">Título del bloque</label><input type="text" id="aTT" maxlength="60" value="${esc(ab.tools_title ?? D.tools_title)}"></div>
           <div class="list-edit" id="toolList">${tools.map((t, i) => `<div class="li-row tool" data-i="${i}"><input class="in" data-f="name" value="${esc(t.name)}" placeholder="Nombre (Photoshop)" maxlength="30" aria-label="Nombre">
             <input class="in" data-f="abbr" value="${esc(t.abbr || '')}" placeholder="Ps" maxlength="2" aria-label="Sigla (2 letras)">
             <span style="display:flex;gap:.3rem;align-items:center"><input type="color" data-f="bg" value="${esc(t.bg || '#2A1B4D')}" aria-label="Color de fondo" data-tip="Fondo" style="width:30px;height:30px;border:0;padding:0;background:none"><input type="color" data-f="fg" value="${esc(t.fg || '#C4B5FD')}" aria-label="Color de la sigla" data-tip="Sigla" style="width:30px;height:30px;border:0;padding:0;background:none">
-            <button class="icon-btn danger" data-delt="${i}" data-tip="Quitar" aria-label="Quitar">${ic('trash')}</button></span></div>`).join('')}</div>
+            <label class="ord"><span>Posición</span><input type="number" inputmode="numeric" min="1" max="${tools.length}" value="${i + 1}" data-tpos aria-label="Posición de la herramienta (de ${tools.length})"></label><button class="icon-btn danger" data-delt="${i}" data-tip="Quitar" aria-label="Quitar">${ic('trash')}</button></span></div>`).join('')}</div>
           ${tools.length < 12 ? `<button class="btn sm" id="addTool" style="margin-top:.8rem">${ic('plus')}Añadir herramienta</button>` : ''}</div>
         <div class="card"><h3>Destacados</h3><label class="switch"><input type="checkbox" id="fAuto" ${ft.auto_center === false ? '' : 'checked'}><span class="tr"></span>Centrar automáticamente la imagen más angosta</label>
           <p class="hint" style="margin-top:.5rem;font-size:.82rem;color:var(--text-3)">Si lo apagas, se respeta exactamente el orden que definas en Piezas → Destacados.</p></div>
@@ -768,6 +768,12 @@
     };
     const draw = () => { drawHtml(); bindSave(); enhance(el); };
     draw();
+    el.addEventListener('change', e => {
+      const inp = e.target.closest('[data-apos], [data-tpos]'); if (!inp) return; collect();
+      const list = inp.dataset.apos != null ? areas : tools, i = +inp.closest('.li-row').dataset.i, to = Math.min(list.length, Math.max(1, Math.round(+inp.value) || i + 1)) - 1;
+      if (to !== i) { const [m] = list.splice(i, 1); list.splice(to, 0, m); }
+      draw();
+    });
     el.addEventListener('click', e => {
       const a = e.target.closest('#addArea, #addTool, [data-del], [data-delt]'); if (!a) return; collect();
       if (a.id === 'addArea') areas.push({ icon: 'shapes', title: '', sub: '' });
@@ -808,12 +814,12 @@
     el.innerHTML = `<div class="stack">
       <div class="card"><label class="switch"><input type="checkbox" id="custom" ${t.customized ? 'checked' : ''}><span class="tr"></span><b>Usar apariencia personalizada</b></label>
         <p class="hint" style="margin:.5rem 0 0;font-size:.85rem;color:var(--text-2)">Apagado = el sitio usa su diseño por defecto (violeta). Los colores que dejes «por defecto» no se tocan.</p></div>
-      <div class="card"><h3>Color principal</h3><div class="colors">
+      <div class="card"><h3>Color principal <button class="btn sm" data-group="reset" type="button">Restablecer</button></h3><div class="colors">
         ${colorF('accent', 'Color de acento', c.accent, '#7C3AED')}${colorF('accentLight', 'Acento secundario', c.accentLight, '#8B5CF6')}</div>
         <div class="preview" id="prev"><h4>Ana Lucía García</h4><p>Así se ven tus títulos, textos y botones.</p><span class="pb">Escríbeme</span></div></div>
-      <div class="card"><h3>Modo claro <small>fondos y textos</small></h3><div class="colors">
+      <div class="card"><h3>Modo claro <small>fondos y textos</small> <button class="btn sm" data-group="reset" type="button">Restablecer</button></h3><div class="colors">
         ${colorF('bg', 'Fondo', c.bg, '#FAF9F7')}${colorF('bgCard', 'Tarjetas', c.bgCard, '#FFFFFF')}${colorF('bgSoft', 'Fondo suave', c.bgSoft, '#F3F0EB')}${colorF('text', 'Texto', c.text, '#1E1B18')}${colorF('text2', 'Texto secundario', c.text2, '#6B6560')}</div></div>
-      <div class="card"><h3>Modo oscuro <small>fondos y textos</small></h3><div class="colors">
+      <div class="card"><h3>Modo oscuro <small>fondos y textos</small> <button class="btn sm" data-group="reset" type="button">Restablecer</button></h3><div class="colors">
         ${colorF('dark.bg', 'Fondo', d.bg, '#070608')}${colorF('dark.bgCard', 'Tarjetas', d.bgCard, '#121015')}${colorF('dark.bgSoft', 'Fondo suave', d.bgSoft, '#1B1820')}${colorF('dark.text', 'Texto', d.text, '#F2EEF8')}${colorF('dark.text2', 'Texto secundario', d.text2, '#A9A2B8')}</div></div>
       <div class="card"><h3>Tipografía y bordes</h3><div class="row3">
         <div class="field"><label for="fD">Títulos</label>${sel('fD', FONTS_DISPLAY, f.display, 'Por defecto (Playfair)')}</div>
@@ -837,6 +843,8 @@
       prev();
     });
     el.addEventListener('click', e => run(async () => {
+      const g = e.target.closest('[data-group="reset"]');
+      if (g) { $$('.color', g.closest('.card')).forEach(col => { const i = $('input', col); delete i.dataset.set; col.classList.add('unset'); $('small', col).textContent = 'Por defecto'; }); toast('Colores por defecto. Pulsa Guardar para aplicarlo.'); return prev(); }
       const x = e.target.closest('[data-clear]'); if (x) { const col = x.closest('.color'), i = $('input', col); delete i.dataset.set; col.classList.add('unset'); $('small', col).textContent = 'Por defecto'; return prev(); }
       if (e.target.closest('#reset')) {
         if (!await ask('Restablecer apariencia', 'Se quitarán todos tus colores, tipografías y estilos por sección. El sitio volverá al diseño por defecto.', 'Restablecer', true)) return;

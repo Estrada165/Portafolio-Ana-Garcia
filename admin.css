@@ -372,5 +372,9 @@ dialog::backdrop{background:rgba(8,6,12,.55);-webkit-backdrop-filter:blur(6px);b
 .ord{height:38px!important;padding:0 .4rem 0 .7rem!important;gap:.5rem!important;white-space:nowrap;flex:none}
 .ord input{width:3.4rem!important;height:30px!important;font-size:.95rem!important}
 .work .acts{gap:.4rem}
-@media (max-width:640px){.work .acts{flex-wrap:wrap}.ord{order:-1;flex:1 1 100%;justify-content:space-between}}
+@media (max-width:640px){.work .acts{flex-wrap:wrap}.work .ord{order:-1;flex:1 1 100%;justify-content:space-between}}
 .doc .acts{align-items:center}
+
+.rowend{display:flex;gap:.4rem;align-items:center}
+.card h3 .btn.sm{float:right;margin-left:.6rem;font-weight:500}
+.card h3 small{margin-left:.3rem}

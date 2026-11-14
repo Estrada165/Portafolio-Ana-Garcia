@@ -932,3 +932,58 @@ html[data-theme="dark"] body::before{background:none}
 html[data-theme="dark"] .feat-tags span,html[data-theme="dark"] .pill,html[data-theme="dark"] .chip{color:#EDE8F7}
 html[data-theme="dark"] .feat-tags span{background:color-mix(in srgb,var(--accent) 26%,transparent);border:1px solid color-mix(in srgb,var(--accent-2) 40%,transparent)}
 html[data-theme="dark"] .feat-text p,html[data-theme="dark"] .feat-text span:not(.x){color:#D3CEDA}
+
+/* ============================================================
+   v5.1 · Guías en dos columnas · carrusel de galería en móvil · vidrio en detalles · pulidos de móvil
+   ============================================================ */
+/* Guías: ficha + panel de vidrio con la página */
+.gv-pos{display:none}
+@media (min-width:1000px){
+  #guias .sec-head{justify-content:flex-start}
+  .gv{grid-template-columns:minmax(250px,320px) minmax(0,1fr)!important;gap:1.2rem;align-items:stretch;justify-items:stretch}
+  .gv-info{height:var(--gv-h);align-content:center;justify-items:start;text-align:left;padding:clamp(1.2rem,2.2vw,2rem);border-radius:28px;background:var(--glass);border:1px solid var(--line);box-shadow:inset 0 1px 0 var(--glass-edge),var(--sh);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);gap:.9rem!important}
+  .gv-info h3{font-size:clamp(1.5rem,2.3vw,2rem)}
+  .gv-meta{justify-content:flex-start}
+  .gv-info p{margin:0;max-width:none;font-size:.96rem;line-height:1.6;max-height:calc(var(--gv-h) - 280px);overflow:auto}
+  .gv-pos{display:grid;gap:.45rem;width:100%;margin-top:.3rem;font-size:.84rem;color:var(--text-2);font-variant-numeric:tabular-nums}
+  .gv-pos b{color:var(--text);font-weight:600}
+  .gv-pos i{display:block;height:4px;border-radius:4px;background:var(--line);overflow:hidden}
+  .gv-pos u{display:block;height:100%;width:3%;border-radius:4px;background:var(--accent);transition:width .35s var(--ease)}
+  .gv-info .btn{justify-self:start}
+  .gv-main{padding:clamp(.8rem,1.6vw,1.3rem);border-radius:28px!important;background:var(--glass)!important;border:1px solid var(--line)!important;box-shadow:inset 0 1px 0 var(--glass-edge),var(--sh)!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);justify-content:center}
+  .gv-frame{max-width:calc(100% - 118px)}
+}
+
+/* Galería en móvil: carrusel */
+.justified.jcar{display:flex!important;flex-direction:row!important;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;padding:2px 0 14px}
+.justified.jcar::-webkit-scrollbar{display:none}
+.justified.jcar .tile{flex:0 0 auto;scroll-snap-align:center}
+
+/* Filtros con vidrio, como la barra */
+.chips{background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:.3rem!important;box-shadow:inset 0 1px 0 var(--glass-edge),var(--sh);-webkit-backdrop-filter:blur(16px) saturate(1.5);backdrop-filter:blur(16px) saturate(1.5)}
+.chip{border-color:transparent!important;background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.chip:hover{background:var(--soft)!important}
+.chip[aria-selected="true"]{background:var(--text)!important;color:var(--bg)!important;border-color:transparent!important}
+html[data-theme="dark"] .chip{color:#D9D4E2}
+html[data-theme="dark"] .chip[aria-selected="true"]{background:var(--accent)!important;color:#fff!important}
+html[data-theme="dark"] .chip small{opacity:.85}
+.more-row .btn{background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 var(--glass-edge),var(--sh)}
+.about-open li,.gv-meta span{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+
+/* Móvil */
+@media (max-width:640px){
+  .hero{min-height:0;padding-top:108px;padding-bottom:1.2rem}
+  .hero-main{flex:none;padding-block:1.2rem 1.4rem}
+  .about-stats{grid-template-columns:repeat(3,1fr);gap:.5rem}
+  .about-stats>div{padding:.8rem .7rem;border-radius:16px}
+  .about-stats b{font-size:1.6rem}
+  .about-stats span{font-size:.74rem}
+  .about-lead{font-size:1rem;line-height:1.6}
+  .about-main{gap:1.1rem}
+  .about-open{gap:.4rem}
+  .about-open li{font-size:.8rem;padding:.3rem .75rem .3rem .65rem}
+  .about{gap:1.4rem}
+}
+/* Pie: los textos quedan alineados con el título de cada columna */
+.f-col a,.f-line{gap:.55rem}
+.f-col a .i,.f-line .i{width:16px;height:16px;margin-inline:7px}
