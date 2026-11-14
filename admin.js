@@ -374,7 +374,7 @@
         <span class="handle" aria-hidden="true">${ic('drag')}</span></div>
       <div class="body"><h4 class="${w.title ? '' : 'empty'}">${esc(w.title || 'Sin título')}</h4><p>${esc(w.category || w.description || '—')}</p>${w.tags?.length ? `<div class="tags">${w.tags.slice(0, 3).map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div>
       <div class="acts">
-        <label class="ord" data-tip="Número de orden: escribe la posición"><span>N.º</span><input type="number" inputmode="numeric" min="1" max="${n}" value="${i + 1}" data-pos aria-label="Posición en la lista (de ${n})"></label>
+        <label class="ord"><span>Posición</span><input type="number" inputmode="numeric" min="1" max="${n}" value="${i + 1}" data-pos aria-label="Posición en la lista (de ${n})"></label>
         <span class="sp"></span>
         <button class="icon-btn" data-act="vis" data-tip="${w.visible ? 'Ocultar del sitio' : 'Mostrar en el sitio'}" aria-label="${w.visible ? 'Ocultar' : 'Mostrar'}">${ic(w.visible ? 'eye' : 'eye-off')}</button>
         <button class="icon-btn" data-act="edit" data-tip="Editar" aria-label="Editar">${ic('edit')}</button>
@@ -577,7 +577,7 @@
           <div class="cov">${d.cover_url ? `<img src="${esc(d.cover_url)}" alt="" loading="lazy">` : ''}</div>
           <div><h4>${esc(d.title)}</h4><p>${[d.client, d.year, `${d.page_count} página${d.page_count === 1 ? '' : 's'}`].filter(Boolean).map(esc).join(' · ')}${d.visible ? '' : ' · <b style="color:var(--warn)">Oculta</b>'}</p></div>
           <div class="acts">
-            <label class="ord" data-tip="Número de orden"><span>N.º</span><input type="number" inputmode="numeric" min="1" max="${S.docs.length}" value="${i + 1}" data-pos aria-label="Posición en la lista (de ${S.docs.length})"></label>
+            <label class="ord"><span>Posición</span><input type="number" inputmode="numeric" min="1" max="${S.docs.length}" value="${i + 1}" data-pos aria-label="Posición en la lista (de ${S.docs.length})"></label>
             <button class="icon-btn" data-act="vis" data-tip="${d.visible ? 'Ocultar del sitio' : 'Mostrar en el sitio'}" aria-label="${d.visible ? 'Ocultar' : 'Mostrar'}">${ic(d.visible ? 'eye' : 'eye-off')}</button>
             <button class="icon-btn" data-act="edit" data-tip="Editar datos" aria-label="Editar">${ic('edit')}</button>
             <button class="icon-btn danger" data-act="del" data-tip="Eliminar" aria-label="Eliminar">${ic('trash')}</button>

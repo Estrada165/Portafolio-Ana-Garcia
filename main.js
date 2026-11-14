@@ -346,7 +346,8 @@
       gal.shown = PAGE; build();
       $('#galeria').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth' });
     });
-    $('#aboutFacts').textContent = `${total + data.logos.length + data.featured.length} piezas publicadas entre proyectos destacados, mockups, diseños, logos e ilustraciones.`;
+    const st = [[data.featured.length, 'Proyectos destacados'], [data.logos.length, 'Logos'], [total, 'Piezas en la galería']].filter(x => x[0]);
+    $('#aboutStats').innerHTML = st.map(([n, t]) => `<div><b>${n}</b><span>${t}</span></div>`).join('');
     new ResizeObserver(() => { const w = $('#gallery').clientWidth; if (w !== gal.w) { gal.w = w; layout(); } }).observe($('#gallery'));
     build();
   }
@@ -455,6 +456,29 @@
         </div></article>`;
     }).join('');
     $$('.logo-tile').forEach((t, i) => isLightImg(LOGOS[i].src).then(f => t.classList.toggle('on-dark', f === true)));
+    setupLogoCarousel();
+  }
+
+  /* Carrusel estático de logos: flechas en escritorio (solo si hay más de los que caben) y arrastre con el dedo en móvil */
+  function setupLogoCarousel() {
+    const track = $('#logosGrid');
+    let wrap = track.parentElement;
+    if (!wrap.classList.contains('lc')) {
+      wrap = document.createElement('div'); wrap.className = 'lc'; track.before(wrap); wrap.appendChild(track);
+      wrap.insertAdjacentHTML('beforeend', `<button class="lc-btn prev" aria-label="Logos anteriores">${icon('left')}</button><button class="lc-btn next" aria-label="Logos siguientes">${icon('right')}</button>`);
+      const step = dir => track.scrollBy({ left: dir * track.clientWidth * .9, behavior: reduceMotion ? 'auto' : 'smooth' });
+      $('.lc-btn.prev', wrap).addEventListener('click', () => step(-1));
+      $('.lc-btn.next', wrap).addEventListener('click', () => step(1));
+      track.addEventListener('scroll', update, { passive: true });
+      new ResizeObserver(update).observe(track);
+    }
+    function update() {
+      const max = track.scrollWidth - track.clientWidth;
+      wrap.classList.toggle('lc-more', max > 4);
+      $('.lc-btn.prev', wrap).disabled = track.scrollLeft < 4;
+      $('.lc-btn.next', wrap).disabled = track.scrollLeft > max - 4;
+    }
+    update();
   }
 
   const dlg = $('#logoDialog');
@@ -542,13 +566,14 @@
           ${link}
         </div>
         <div class="gv-main">
-          <button class="gv-page" id="rdPage" data-v="${esc(key)}" data-i="0" data-cursor="Ver" aria-label="Ampliar la página"><img id="rdImg" alt="" decoding="async"></button>
-          <button class="gv-ic" id="rdOpen" data-v="${esc(key)}" data-i="0" aria-label="Ampliar con zoom" data-tip="Ampliar">${icon('zoom')}</button>
           <button class="gv-nav prev" id="rdPrev" aria-label="Página anterior">${icon('left')}</button>
+          <div class="gv-frame"><button class="gv-page" id="rdPage" data-v="${esc(key)}" data-i="0" data-cursor="Ver" aria-label="Ampliar la página"><img id="rdImg" alt="" decoding="async"></button>
+            <button class="gv-ic" id="rdOpen" data-v="${esc(key)}" data-i="0" aria-label="Ampliar con zoom" data-tip="Ampliar">${icon('zoom')}</button></div>
           <button class="gv-nav next" id="rdNext" aria-label="Página siguiente">${icon('right')}</button>
         </div>
       </div>`;
 
+    const p0 = pages[0]; if (p0?.width && p0?.height) stage.querySelector('.gv').style.setProperty('--ar', (p0.width / p0.height).toFixed(4));
     const gv = $('.gv', stage), img = $('#rdImg'), pg = $('#rdPage');
     let cur = -1, swiped = false;
     const show = (k, first) => {
@@ -730,7 +755,7 @@
     const a = st.about; if (!a) return;
     if (a.title) $('.about-main h2').textContent = String(a.title).slice(0, 60);
     if (a.lead) $('.about-lead').textContent = String(a.lead).slice(0, 700);
-    if (a.show_facts === false) $('#aboutFacts').hidden = true;
+    if (a.show_facts === false) $('#aboutStats').hidden = true;
     if (a.areas_title) $$('.panel h3')[0].textContent = String(a.areas_title).slice(0, 60);
     if (a.tools_title) $$('.panel h3')[1].textContent = String(a.tools_title).slice(0, 60);
     if (Array.isArray(a.areas) && a.areas.length)
