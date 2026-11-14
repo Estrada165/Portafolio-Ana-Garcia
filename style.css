@@ -895,3 +895,40 @@ main,.footer{position:relative;z-index:2}
 .lc{width:100%;min-width:0}
 .logo-grid{max-width:none!important;width:calc(100% + 1rem)}
 @media (max-width:520px){.logo-grid{width:auto}}
+
+/* ============================================================
+   v5.0 · Guías centradas · barra que se esconde · modo oscuro en negro sólido · Sobre mí
+   ============================================================ */
+#guias .sec-head{display:grid;justify-items:center;text-align:center;margin-bottom:.8rem}
+#guias .sec-head h2{font-size:clamp(1.9rem,4vw,2.8rem)}
+.gv{--gv-h:clamp(300px,calc(100svh - 270px),780px);gap:.9rem;justify-items:center}
+.gv-info{display:grid!important;justify-items:center;text-align:center;gap:.45rem!important;width:100%}
+.gv-info h3{font-size:clamp(1.15rem,2vw,1.5rem)}
+.gv-meta{justify-content:center}
+.gv-info p{flex:none;max-width:68ch;font-size:.92rem;line-height:1.5;margin:0 auto}
+.gv-info .btn{justify-self:center}
+@media (max-width:859px){.gv-frame{max-height:calc(100svh - 300px)}}
+
+/* Sobre mí: números en la tipografía sencilla y etiquetas con diseño */
+.about-stats b{font-family:var(--f-body)!important;font-weight:700;letter-spacing:-.04em}
+.about-open li{font-family:var(--f-body);font-weight:500;color:var(--text);border:1px solid var(--line)!important;background:var(--glass);box-shadow:inset 0 1px 0 var(--glass-edge);padding:.4rem .95rem .4rem .8rem;display:inline-flex;align-items:center;gap:.5rem}
+.about-open li::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+
+/* Modo oscuro: negro sólido y sutil, sin aurora de colores, y textos secundarios más claros */
+html[data-theme="dark"]{--g1:transparent;--g2:transparent;--bg:#09090B;--card:#111114;--soft:#18181C;--text:#F6F4F0;--text-2:#C4BFCB;--line:rgba(255,255,255,.16)}
+html[data-theme="dark"] body::before{background:radial-gradient(70vmax 50vmax at 50% -10%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%)}
+html[data-theme="dark"] .areas small,html[data-theme="dark"] .logo-meta p,html[data-theme="dark"] .about-stats span,html[data-theme="dark"] .gv-info p,html[data-theme="dark"] .gv-meta span,html[data-theme="dark"] .sec-head p,html[data-theme="dark"] .cx-lead,html[data-theme="dark"] .cx-ways small{color:#CFCAD6}
+html[data-theme="dark"] .areas strong,html[data-theme="dark"] .logo-meta h3,html[data-theme="dark"] .about-lead{color:#FFFFFF}
+html[data-theme="dark"] .about-lead{color:#D9D5DF}
+html[data-theme="dark"] .about-stats b{color:color-mix(in srgb,var(--accent-2) 80%,#fff)}
+#guias{padding-top:.4rem;padding-bottom:2rem}
+#guias .sec-head{display:flex!important;justify-content:center;align-items:center;text-align:center}
+.gv{--gv-h:clamp(300px,calc(100svh - 285px),780px)}
+@media (max-width:859px){
+  .gv{justify-items:stretch}
+  .gv-frame{max-height:none!important;width:min(100%,calc((100svh - 340px) * var(--ar)))!important;flex:0 0 auto!important;height:auto!important}
+}
+html[data-theme="dark"] body::before{background:none}
+html[data-theme="dark"] .feat-tags span,html[data-theme="dark"] .pill,html[data-theme="dark"] .chip{color:#EDE8F7}
+html[data-theme="dark"] .feat-tags span{background:color-mix(in srgb,var(--accent) 26%,transparent);border:1px solid color-mix(in srgb,var(--accent-2) 40%,transparent)}
+html[data-theme="dark"] .feat-text p,html[data-theme="dark"] .feat-text span:not(.x){color:#D3CEDA}

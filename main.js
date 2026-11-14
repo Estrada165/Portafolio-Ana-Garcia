@@ -653,7 +653,11 @@
         const y = scrollY, h = document.documentElement.scrollHeight - innerHeight;
         bar.style.transform = `scaleX(${h > 0 ? y / h : 0})`;
         nav.classList.toggle('scrolled', y > 24);
-        last = y; tick = false;
+        const dy = y - last;                                   // la barra se esconde al bajar y reaparece al subir
+        if (document.body.classList.contains('no-scroll') || y < 120 || dy < -6) nav.classList.remove('hide');
+        else if (dy > 6) nav.classList.add('hide');
+        if (Math.abs(dy) > 6 || y < 120) last = y;
+        tick = false;
       });
     };
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
