@@ -392,8 +392,8 @@
     const box = $('#gallery'), W = box.clientWidth; if (!W || !gal.tiles.length) { if (!gal.tiles.length) box.textContent = ''; return; }
     if (isMob()) {                                       // móvil: carrusel horizontal con imán
       box.classList.add('jcar'); box.textContent = '';
-      const w = Math.round(W * .86), hMax = Math.round(Math.max(280, innerHeight * .58));
-      gal.tiles.forEach(t => { t.style.width = `${w}px`; t.style.height = `${Math.round(Math.min(hMax, Math.max(190, w / t._r)))}px`; box.appendChild(t); });
+      const h = Math.round(Math.min(270, Math.max(220, innerHeight * .31)));   // misma altura para todas: sin huecos debajo
+      gal.tiles.forEach(t => { t.style.width = `${Math.round(Math.min(t._r * h, W * .9))}px`; t.style.height = `${h}px`; box.appendChild(t); });
       gal.rendered = gal.tiles.length; $('#galMore').hidden = true; $('#galLess').hidden = true; return;
     }
     box.classList.remove('jcar');
@@ -572,7 +572,8 @@
           <h3>${esc(doc.title)}</h3>
           <div class="gv-meta">${[doc.page_count + ' páginas', doc.client, doc.year].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('')}</div>
           ${doc.description ? `<p class="gv-desc" id="rdDesc">${esc(doc.description)}</p><button class="gv-more" id="rdMore" hidden>Leer más</button>` : ''}
-          <div class="gv-pos" aria-hidden="true"><span>Página <b id="rdPos">1</b> de ${n}</span><i><u id="rdBar"></u></i></div>
+          <div class="gv-pos" aria-hidden="true"><div class="gv-big"><b id="rdPos">1</b><span>/ ${n}</span></div><i><u id="rdBar"></u></i></div>
+          <div class="gv-keys" aria-hidden="true"><span><kbd>←</kbd><kbd>→</kbd> cambiar de página</span><span><kbd>clic</kbd> ampliar</span></div>
           ${link}
         </div>
         <div class="gv-main">
