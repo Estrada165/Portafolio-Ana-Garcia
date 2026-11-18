@@ -39,20 +39,25 @@
   const safe = (p, fallback) => p.catch(e => { console.warn('[portfolio]', e.message || e); return fallback; });
 
   const norm = r => ({
-    id: r.id, src: r.image_url, thumb: r.thumb_url || null,
+    id: r.id, src: r.image_url, thumb: r.thumb_url || r.thumb || null,
     title: r.title || '', desc: r.description || '', category: r.category || '',
     width: r.width || null, height: r.height || null,
     tags: r.tags || [], variations: r.variations || [],
   });
 
+  const PRE = window.__pre || {};
+  /* Fundido suave de imágenes marcadas con .fade (carga elegante) */
+  const fadeIn = i => i.classList.add('in');
+  document.addEventListener('load', e => { if (e.target.classList && e.target.classList.contains('fade')) fadeIn(e.target); }, true);
+  const settleFades = root => (root || document).querySelectorAll('img.fade').forEach(i => { if (i.complete) fadeIn(i); });
   async function loadAll() {
     const empty = { mockups: [], designs: [], illustrations: [], featured: [], logos: [] };
     const [local, works, assets, docs, settings] = await Promise.all([
-      safe(fetch('data/local-content.json').then(r => r.json()), empty),
-      HAS_SB ? safe(rest('works?select=*&visible=eq.true&order=sort_order.asc,created_at.asc'), []) : [],
-      HAS_SB ? safe(rest('work_assets?select=*&order=sort_order.asc'), []) : [],
-      HAS_SB ? safe(rest('pdf_documents?select=*&visible=eq.true&order=sort_order.asc,created_at.asc'), []) : [],
-      HAS_SB ? safe(rest('site_settings?select=key,value'), []) : [],
+      safe(PRE.local || fetch('data/local-content.json').then(r => r.json()), empty),
+      HAS_SB ? safe(PRE['works?select=*&visible=eq.true&order=sort_order.asc,created_at.asc'] || rest('works?select=*&visible=eq.true&order=sort_order.asc,created_at.asc'), []) : [],
+      HAS_SB ? safe(PRE['work_assets?select=*&order=sort_order.asc'] || rest('work_assets?select=*&order=sort_order.asc'), []) : [],
+      HAS_SB ? safe(PRE['pdf_documents?select=*&visible=eq.true&order=sort_order.asc,created_at.asc'] || rest('pdf_documents?select=*&visible=eq.true&order=sort_order.asc,created_at.asc'), []) : [],
+      HAS_SB ? safe(PRE['site_settings?select=key,value'] || rest('site_settings?select=key,value'), []) : [],
     ]);
 
     const kindMap = { mockup: 'mockups', design: 'designs', illustration: 'illustrations', featured: 'featured', logo: 'logos' };
@@ -79,6 +84,14 @@
   const okColor = v => typeof v === 'string' && /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(v.trim()) ? v.trim() : null;
   const okFont  = v => typeof v === 'string' && /^[\w\s-]{2,40}$/.test(v.trim()) ? v.trim() : null;
 
+  /* Contraste: texto legible sobre cualquier color de acento */
+  const rgbOf = h => { h = h.replace('#', ''); if (h.length < 6) h = [...h.slice(0, 3)].map(x => x + x).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+  const lum = h => { const [r, g, b] = rgbOf(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  const onColor = h => ratio(h, '#ffffff') >= ratio(h, '#16131a') ? '#ffffff' : '#16131a';
+  const hex6 = v => /^#[0-9a-f]{6}$/i.test(v) ? v : (/^#[0-9a-f]{3}$/i.test(v) ? '#' + [...v.slice(1)].map(x => x + x).join('') : null);
+  const lighten = (h, need, bg) => { let [r, g, b] = rgbOf(h), k = 0; while (ratio('#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''), bg) < need && k++ < 20) [r, g, b] = [r, g, b].map(v => v + (255 - v) * .12); return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''); };
+
   function applyTheme(theme) {
     if (!theme || theme.customized !== true) return;
     const c = theme.colors || {}, d = c.dark || {};
@@ -88,10 +101,17 @@
     const radius = { sharp: '4px', soft: '14px', round: '26px' }[theme.radius];
     const fd = okFont(theme.fonts?.display), fb = okFont(theme.fonts?.body);
     let css = `:root{${light}${radius ? `--r:${radius};` : ''}${fd ? `--f-display:'${fd}',system-ui,sans-serif;` : ''}${fb ? `--f-body:'${fb}',system-ui,sans-serif;` : ''}}`;
+    const A = hex6(okColor(c.accent) || '');
+    if (A) {
+      css += `:root{--on-accent:${onColor(A)}}`;
+      const dbg = hex6(okColor(d.bg) || '') || '#09090B';
+      if (ratio(A, dbg) < 3) css += `[data-theme="dark"]{--accent:${lighten(A, 3, dbg)}}`;   // en modo oscuro se aclara si no se ve
+      css += `[data-theme="dark"]{--on-accent:${onColor(ratio(A, dbg) < 3 ? lighten(A, 3, dbg) : A)}}`;
+    }
     if (dark) css += `[data-theme="dark"]{${dark}}`;
     for (const [id, o] of Object.entries(theme.sections || {})) {
       if (!/^[\w-]+$/.test(id)) continue;
-      const rule = (okColor(o.bg) ? `background:${okColor(o.bg)};` : '') + (okColor(o.text) ? `color:${okColor(o.text)};--text:${okColor(o.text)};` : '') + (okColor(o.accent) ? `--accent:${okColor(o.accent)};` : '');
+      const rule = (okColor(o.bg) ? `background:${okColor(o.bg)};` : '') + (okColor(o.text) ? `color:${okColor(o.text)};--text:${okColor(o.text)};` : '') + (okColor(o.accent) ? `--accent:${okColor(o.accent)};${hex6(okColor(o.accent)) ? `--on-accent:${onColor(hex6(okColor(o.accent)))};` : ''}` : '');
       if (rule) css += `[data-theme-section="${id}"]{${rule}}`;
     }
     let el = $('#themeVars'); if (!el) { el = document.createElement('style'); el.id = 'themeVars'; document.head.appendChild(el); }
@@ -309,7 +329,7 @@
     const card = (it, i) => `
       <article class="feat-card" style="--ar:${(ratioOf(it) ? clamp(it.width / it.height, .6, 1.7) : 1).toFixed(4)}">
         <button class="feat-media" data-v="featured" data-i="${i}" aria-label="Ampliar ${esc(it.alt)}">
-          <img src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async">
+          <img src="${esc(it.src)}" alt="${esc(it.alt)}"${dims(it)} loading="${i ? 'lazy' : 'eager'}" decoding="async" class="fade">
         </button>
         <div class="feat-text">
           ${it.title ? `<h3>${esc(it.title)}</h3>` : ''}
@@ -600,7 +620,7 @@
       full.onload = () => { if (cur === k) { img.src = p.image_url; img.classList.remove('swap'); void img.offsetWidth; img.classList.add('swap'); } };
       full.src = p.image_url;
       if (first) img.src = p.thumb_url || p.image_url;
-      if (pages[k + 1]) new Image().src = pages[k + 1].image_url;
+      [1, -1].forEach(d => { if (pages[k + d]) new Image().src = pages[k + d].image_url; });
     };
     show(0, true);
     $('#rdPrev').addEventListener('click', () => show(cur - 1));

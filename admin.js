@@ -828,7 +828,7 @@
         <p class="hint" style="margin:.5rem 0 0;font-size:.85rem;color:var(--text-2)">Apagado = el sitio usa su diseño por defecto (violeta). Los colores que dejes «por defecto» no se tocan.</p></div>
       <div class="card"><h3>Color principal <button class="btn sm" data-group="reset" type="button">Restablecer</button></h3><div class="colors">
         ${colorF('accent', 'Color de acento', c.accent, '#7C3AED')}${colorF('accentLight', 'Acento secundario', c.accentLight, '#8B5CF6')}</div>
-        <div class="preview" id="prev"><h4>Ana Lucía García</h4><p>Así se ven tus títulos, textos y botones.</p><span class="pb">Escríbeme</span></div></div>
+        <div class="preview" id="prev"><h4>Ana Lucía García</h4><p>Así se ven tus títulos, textos y botones.</p><span class="pb">Escríbeme</span></div><div class="ccs" id="accWarn"></div></div>
       <div class="card"><h3>Modo claro <small>fondos y textos</small> <button class="btn sm" data-group="reset" type="button">Restablecer</button></h3><div class="colors">
         ${colorF('bg', 'Fondo', c.bg, '#FAF9F7')}${colorF('bgCard', 'Tarjetas', c.bgCard, '#FFFFFF')}${colorF('bgSoft', 'Fondo suave', c.bgSoft, '#F3F0EB')}${colorF('text', 'Texto', c.text, '#1E1B18')}${colorF('text2', 'Texto secundario', c.text2, '#6B6560')}</div></div>
       <div class="card"><h3>Modo oscuro <small>fondos y textos</small> <button class="btn sm" data-group="reset" type="button">Restablecer</button></h3><div class="colors">
@@ -843,11 +843,17 @@
           ${colorF(`sections.${id}.bg`, 'Fondo', s.bg, '#FAF9F7')}${colorF(`sections.${id}.text`, 'Texto', s.text, '#1E1B18')}${colorF(`sections.${id}.accent`, 'Acento', s.accent, '#7C3AED')}</div></details>`; }).join('')}</div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn danger" id="reset">Restablecer todo al diseño por defecto</button></div>
     </div>${saveBar()}`;
+    const rgbOf = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+    const lum = h => { const [r, g, b] = rgbOf(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+    const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
     const prev = () => {
       const g = p => { const n = $(`.color[data-path="${p}"] input`, el); return n?.dataset.set ? n.value : null; };
       const p = $('#prev', el); const acc = g('accent') || '#7C3AED', r = { sharp: '4px', soft: '14px', round: '26px' }[$('#rad', el).value];
       p.style.cssText = `background:${g('bgCard') || '#fff'};color:${g('text') || '#1E1B18'};border-radius:${r}`;
-      $('.pb', p).style.cssText = `background:${acc}`; $('p', p).style.color = g('text2') || '#6B6560';
+      const onA = ratio(acc, '#ffffff') >= ratio(acc, '#16131a') ? '#ffffff' : '#16131a';
+      $('.pb', p).style.cssText = `background:${acc};color:${onA}`;
+      const bgL = g('bg') || '#FAF9F7', bgD = g('dark.bg') || '#09090B', cl = ratio(acc, bgL), cd = ratio(acc, bgD);
+      const w = $('#accWarn', el); if (w) w.innerHTML = [`<span class="cc ${cl >= 3 ? 'ok' : 'low'}">Modo claro · ${cl.toFixed(1)}:1 ${cl >= 3 ? '✓ se ve bien' : '— poco contraste con el fondo'}</span>`, `<span class="cc ${cd >= 3 ? 'ok' : 'low'}">Modo oscuro · ${cd.toFixed(1)}:1 ${cd >= 3 ? '✓ se ve bien' : '— el sitio lo aclarará solo'}</span>`, `<span class="cc ok">Texto sobre el color: ${onA === '#ffffff' ? 'blanco' : 'oscuro'} (automático)</span>`].join(''); $('p', p).style.color = g('text2') || '#6B6560';
     };
     prev();
     el.addEventListener('input', e => {

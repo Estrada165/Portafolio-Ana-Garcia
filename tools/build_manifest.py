@@ -9,9 +9,19 @@ from PIL import Image
 IMG = 'imagenes'
 def natural(s): return [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', s)]
 
+def thumb(path, maxw=720):
+    """Miniatura WebP liviana en imagenes/_thumbs/ para que la galería cargue rápido."""
+    out = os.path.join(IMG, '_thumbs', os.path.splitext(os.path.basename(path))[0] + '.webp')
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with Image.open(path) as im:
+        im = im.convert('RGBA' if im.mode in ('RGBA', 'LA', 'P') else 'RGB')
+        if im.width > maxw: im = im.resize((maxw, round(im.height * maxw / im.width)), Image.LANCZOS)
+        im.save(out, 'WEBP', quality=78, method=6)
+    return out.replace(os.sep, '/')
+
 def item(path, title='', category='', description=''):
     with Image.open(path) as im: w, h = im.size
-    r = {'image_url': path.replace(os.sep, '/'), 'title': title, 'category': category, 'width': w, 'height': h}
+    r = {'thumb': thumb(path), 'image_url': path.replace(os.sep, '/'), 'title': title, 'category': category, 'width': w, 'height': h}
     if description: r['description'] = description
     return r
 

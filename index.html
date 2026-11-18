@@ -24,7 +24,24 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preload" href="fonts/playfair.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://gxpcujfjvlqecpnipkly.supabase.co" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script>
+    /* Pide los datos ya, sin esperar a que cargue main.js */
+    (function () {
+      var C = window.PORTFOLIO_CONFIG || {}, P = window.__pre = {};
+      P.local = fetch('data/local-content.json').then(function (r) { return r.json(); });
+      P.local.catch(function () {});
+      if (!C.SUPABASE_URL || !C.SUPABASE_ANON) return;
+      ['works?select=*&visible=eq.true&order=sort_order.asc,created_at.asc', 'work_assets?select=*&order=sort_order.asc',
+       'pdf_documents?select=*&visible=eq.true&order=sort_order.asc,created_at.asc', 'site_settings?select=key,value'].forEach(function (p) {
+        var q = fetch(C.SUPABASE_URL + '/rest/v1/' + p, { headers: { apikey: C.SUPABASE_ANON, Authorization: 'Bearer ' + C.SUPABASE_ANON } })
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); });
+        q.catch(function () {}); P[p] = q;
+      });
+    })();
+  </script>
   <script>
     (function () {
       document.documentElement.classList.add('js');
@@ -304,7 +321,6 @@
   <div class="v-thumbs" id="vThumbs"></div>
 </div>
 
-<script src="config.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
